@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SpeeDateLive — Rencontres en live</title>
+<style>
+  :root{--rose:#ff4d79;--rouge:#e60043;--rose-clair:#ff8fab;--or:#ffd28f;}
+  *{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',system-ui,-apple-system,sans-serif}
+  body{min-height:100vh;color:#fff;overflow-x:hidden;
+    background:radial-gradient(circle at 20% 15%,#2a2a30,transparent 55%),
+               radial-gradient(circle at 80% 85%,#1c1c22,transparent 55%),
+               linear-gradient(135deg,#232327,#141416 55%,#000);}
+  .hearts{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:0}
+  .hearts span{position:absolute;bottom:-40px;color:var(--rose-clair);opacity:.3;animation:rise linear infinite;font-size:22px}
+  @keyframes rise{to{transform:translateY(-110vh) rotate(360deg);opacity:0}}
+  .wrap{position:relative;z-index:1;max-width:820px;margin:0 auto;padding:20px}
+  .logo{display:flex;align-items:center;gap:12px;margin:18px 0 8px}
+  .logo svg{width:48px;height:48px}
+  .logo h1{font-size:32px;font-weight:800;letter-spacing:-1px;
+    background:linear-gradient(90deg,var(--rose-clair),var(--rose),var(--or));
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+  .card{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:20px;margin-top:14px}
+  label.q{display:block;font-weight:600;margin:14px 0 7px;font-size:15px}
+  .opts{display:flex;gap:8px;flex-wrap:wrap}
+  .opt{flex:1;min-width:88px;padding:11px 8px;border-radius:12px;cursor:pointer;text-align:center;
+    background:rgba(255,255,255,.06);border:2px solid transparent;font-weight:600;font-size:14px;transition:.15s}
+  .opt.sel{border-color:var(--rose);background:rgba(255,77,121,.22)}
+  .opt .emo{font-size:22px;display:block;margin-bottom:3px}
+  select{width:100%;padding:11px;border-radius:11px;font-size:14px;border:none;background:rgba(255,255,255,.12);color:#fff;outline:none}
+  select option{color:#111}
+  .btn{display:block;width:100%;margin-top:20px;padding:15px;border:none;border-radius:14px;font-size:17px;font-weight:800;cursor:pointer;color:#fff;
+    background:linear-gradient(90deg,var(--rouge),var(--rose));box-shadow:0 8px 24px rgba(230,0,67,.45)}
+  .btn:active{transform:scale(.97)}
+  .btn.grey{background:rgba(255,255,255,.14);box-shadow:none}
+  .stage{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:6px}
+  @media(max-width:620px){.stage{grid-template-columns:1fr}}
+  .vid{position:relative;border-radius:18px;overflow:hidden;aspect-ratio:3/4;background:#111;border:2px solid rgba(255,255,255,.1)}
+  .vid video{width:100%;height:100%;object-fit:cover;background:#111}
+  .vid .tag{position:absolute;left:10px;bottom:10px;background:rgba(0,0,0,.55);padding:5px 12px;border-radius:20px;font-size:14px;font-weight:600}
+  .controls{display:flex;gap:12px;justify-content:center;margin-top:16px;flex-wrap:wrap}
+  .cbtn{border:none;border-radius:14px;padding:14px 20px;font-size:15px;font-weight:800;cursor:pointer;color:#fff}
+  .cbtn.next{background:rgba(255,255,255,.14)}
+  .cbtn.stop{background:rgba(255,80,80,.25)}
+  .info{text-align:center;color:#ffb8cd;font-size:15px;margin-top:14px;min-height:20px}
+  .status{display:inline-block;background:rgba(0,0,0,.4);padding:8px 16px;border-radius:20px;font-weight:700;margin-top:10px}
+  .hidden{display:none}
+  .spin{width:44px;height:44px;border:5px solid rgba(255,255,255,.2);border-top-color:var(--rose);border-radius:50%;animation:sp 1s linear infinite;margin:20px auto}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  small.legal{display:block;text-align:center;color:#8a8a90;margin-top:18px;font-size:12px;line-height:1.6}
+</style>
+</head>
+<body>
+<div class="hearts" id="hearts"></div>
+<div class="wrap">
+  <div class="logo">
+    <svg viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
+      <defs><linearGradient id="hl" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e8637e"/><stop offset="1" stop-color="#c8415f"/></linearGradient></defs>
+      <path d="M128 214 C 70 172, 28 138, 28 92 A 46 46 0 0 1 128 66 A 46 46 0 0 1 228 92 C 228 138, 186 172, 128 214 Z" fill="url(#hl)"/>
+      <g transform="translate(128 112)" fill="none" stroke="#fff" stroke-linecap="round"><circle r="46" stroke-width="9"/><line x1="0" y1="0" x2="0" y2="-30" stroke-width="9"/><line x1="0" y1="0" x2="22" y2="10" stroke-width="9"/><circle r="5" fill="#fff" stroke="none"/></g>
+    </svg>
+    <h1>SpeeDateLive</h1>
+  </div>
+
+  <!-- ACCUEIL / CRITÈRES -->
+  <div id="setup" class="card">
+    <h2 style="font-size:20px;margin-bottom:4px">Rencontres en live 💘</h2>
+    <p style="color:#ffb8cd;font-size:13px">Tu vas être mis(e) en relation avec de <b>vraies personnes</b> connectées en même temps que toi.</p>
+
+    <label class="q">Je suis…</label>
+    <div class="opts" id="genre">
+      <div class="opt" data-v="homme"><span class="emo">👨</span>Un homme</div>
+      <div class="opt" data-v="femme"><span class="emo">👩</span>Une femme</div>
+    </div>
+
+    <label class="q">Je veux rencontrer…</label>
+    <div class="opts" id="pref">
+      <div class="opt" data-v="femme"><span class="emo">👩</span>Des femmes</div>
+      <div class="opt" data-v="homme"><span class="emo">👨</span>Des hommes</div>
+      <div class="opt" data-v="tous"><span class="emo">💞</span>Tout le monde</div>
+    </div>
+
+    <label class="q">Je viens de…</label>
+    <select id="origine"></select>
+    <label class="q">Je veux rencontrer des gens de…</label>
+    <select id="pays"></select>
+
+    <button class="btn" id="start" disabled>🎥 Démarrer le live</button>
+    <div id="setupHint" style="color:#ff7a94;font-size:12px;margin-top:8px;text-align:center"></div>
+    <small class="legal">⚠️ Réservé aux 18 ans et +. Sois respectueux(se). Ta caméra n'est partagée qu'avec la personne en face, en direct.</small>
+  </div>
+
+  <!-- LIVE -->
+  <div id="live" class="hidden">
+    <div class="stage">
+      <div class="vid"><video id="localV" autoplay playsinline muted></video><span class="tag">Toi</span></div>
+      <div class="vid"><video id="remoteV" autoplay playsinline></video><span class="tag" id="remoteTag">…</span></div>
+    </div>
+    <div style="text-align:center"><span class="status" id="liveStatus">Recherche…</span></div>
+    <div id="waiting" style="text-align:center"><div class="spin"></div><p style="color:#ffb8cd">On te cherche quelqu'un… (personnes en attente : <b id="qcount">0</b>)</p></div>
+    <div class="controls">
+      <button class="cbtn next" id="nextBtn">⏭️ Suivant</button>
+      <button class="cbtn stop" id="stopBtn">⏹ Quitter</button>
+    </div>
+    <p class="info" id="liveInfo"></p>
+  </div>
+</div>
+
+<script>
+const PAYS = [["all","🌍 Peu importe"],["fr","🇫🇷 France"],["us","🇺🇸 États-Unis"],["ca","🇨🇦 Canada"],["be","🇧🇪 Belgique"],["ch","🇨🇭 Suisse"],["ma","🇲🇦 Maroc"],["dz","🇩🇿 Algérie"],["tn","🇹🇳 Tunisie"],["es","🇪🇸 Espagne"],["it","🇮🇹 Italie"],["de","🇩🇪 Allemagne"],["uk","🇬🇧 Royaume-Uni"]];
+const FLAGS=Object.fromEntries(PAYS.map(([k,v])=>[k,v.split(" ")[0]]));
+const state={genre:null,pref:null,origine:"fr",pays:"all"};
+
+// coeurs
+const hc=document.getElementById("hearts");
+for(let i=0;i<16;i++){const s=document.createElement("span");s.textContent="❤";s.style.left=Math.random()*100+"%";s.style.animationDuration=(6+Math.random()*8)+"s";s.style.animationDelay=(Math.random()*8)+"s";s.style.fontSize=(14+Math.random()*18)+"px";hc.appendChild(s);}
+
+// selects
+const selO=document.getElementById("origine"),selP=document.getElementById("pays");
+PAYS.forEach(([k,v])=>{if(k!=="all")selO.appendChild(new Option(v,k));selP.appendChild(new Option(v,k));});
+selO.value="fr";selP.value="all";
+selO.onchange=e=>state.origine=e.target.value;
+selP.onchange=e=>state.pays=e.target.value;
+
+function group(id,key){document.querySelectorAll("#"+id+" .opt").forEach(o=>o.onclick=()=>{document.querySelectorAll("#"+id+" .opt").forEach(x=>x.classList.remove("sel"));o.classList.add("sel");state[key]=o.dataset.v;check();});}
+group("genre","genre");group("pref","pref");
+function check(){document.getElementById("start").disabled=!(state.genre&&state.pref);document.getElementById("setupHint").textContent=(state.genre&&state.pref)?"":"Indique qui tu es et qui tu veux rencontrer.";}
+check();
+
+let ws, pc, localStream, matched=false;
+const remoteV=document.getElementById("remoteV"), localV=document.getElementById("localV");
+const ICE={iceServers:[{urls:"stun:stun.l.google.com:19302"},{urls:"stun:stun1.l.google.com:19302"}]};
+
+document.getElementById("start").onclick=async()=>{
+  try{ localStream=await navigator.mediaDevices.getUserMedia({video:true,audio:true}); }
+  catch(e){ alert("Autorise la caméra et le micro pour continuer."); return; }
+  localV.srcObject=localStream;
+  document.getElementById("setup").classList.add("hidden");
+  document.getElementById("live").classList.remove("hidden");
+  connect();
+};
+
+function connect(){
+  const proto=location.protocol==="https:"?"wss":"ws";
+  ws=new WebSocket(proto+"://"+location.host);
+  ws.onopen=()=>ws.send(JSON.stringify({type:"join",genre:state.genre,pref:state.pref,origine:state.origine,pays:state.pays}));
+  ws.onmessage=async(ev)=>{
+    const m=JSON.parse(ev.data);
+    if(m.type==="waiting"){ showWaiting(m.count); }
+    else if(m.type==="matched"){ startCall(m); }
+    else if(m.type==="signal"){ await onSignal(m.data); }
+    else if(m.type==="peer-left"){ info("La personne est partie. On te cherche quelqu'un d'autre…"); teardownPC(); showWaiting(); }
+  };
+  ws.onclose=()=>{ setStatus("Déconnecté"); };
+}
+
+function showWaiting(count){
+  matched=false;
+  document.getElementById("waiting").classList.remove("hidden");
+  remoteV.srcObject=null; document.getElementById("remoteTag").textContent="…";
+  setStatus("🔎 En attente d'une personne…");
+  if(typeof count==="number") document.getElementById("qcount").textContent=count;
+}
+function setStatus(t){document.getElementById("liveStatus").textContent=t;}
+function info(t){document.getElementById("liveInfo").textContent=t||"";}
+
+async function startCall(m){
+  matched=true;
+  document.getElementById("waiting").classList.add("hidden");
+  document.getElementById("remoteTag").textContent=(m.peer.pseudo||"En ligne")+" "+(FLAGS[m.peer.origine]||"");
+  setStatus("💚 Connecté(e) en direct !"); info("");
+  pc=new RTCPeerConnection(ICE);
+  localStream.getTracks().forEach(t=>pc.addTrack(t,localStream));
+  pc.ontrack=(e)=>{ remoteV.srcObject=e.streams[0]; };
+  pc.onicecandidate=(e)=>{ if(e.candidate) ws.send(JSON.stringify({type:"signal",data:{ice:e.candidate}})); };
+  if(m.initiator){
+    const offer=await pc.createOffer(); await pc.setLocalDescription(offer);
+    ws.send(JSON.stringify({type:"signal",data:{sdp:pc.localDescription}}));
+  }
+}
+async function onSignal(data){
+  if(!pc) return;
+  if(data.sdp){
+    await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
+    if(data.sdp.type==="offer"){ const ans=await pc.createAnswer(); await pc.setLocalDescription(ans); ws.send(JSON.stringify({type:"signal",data:{sdp:pc.localDescription}})); }
+  } else if(data.ice){ try{ await pc.addIceCandidate(new RTCIceCandidate(data.ice)); }catch(e){} }
+}
+function teardownPC(){ if(pc){ pc.close(); pc=null; } remoteV.srcObject=null; }
+
+document.getElementById("nextBtn").onclick=()=>{ teardownPC(); if(ws&&ws.readyState===1) ws.send(JSON.stringify({type:"next"})); showWaiting(); };
+document.getElementById("stopBtn").onclick=()=>{
+  teardownPC(); if(ws&&ws.readyState===1) ws.send(JSON.stringify({type:"stop"}));
+  if(localStream) localStream.getTracks().forEach(t=>t.stop());
+  document.getElementById("live").classList.add("hidden");
+  document.getElementById("setup").classList.remove("hidden");
+};
+</script>
+</body>
+</html>
