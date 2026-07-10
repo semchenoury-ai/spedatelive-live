@@ -1913,8 +1913,8 @@ document.querySelectorAll(".fp-opt").forEach(btn=>{
     document.getElementById("liveInfo").textContent=`${partner.nom} a reçu ta fleur ${emo} 🥰 (-${cost} jeton${cost>1?"s":""}, tu gagnes ${q} de temps !)`;
     // la fleur fait gagner du temps (proportionnel aux jetons)
     boostTimer(gain, `Fleur ${emo} +temps`);
-    // la personne réagit
-    setTimeout(()=>{if(partner)addMsg("them", cost>=5?"Waw, elle est magnifique 😍 merci !!":cost>=3?"Oh c'est trop mignon 🥰":"Merci c'est adorable 😊");},1100);
+    // on prévient la vraie personne en face : elle voit la fleur et gagne le même temps
+    if(window.sdlDC) window.sdlDC({t:"flower", emo:emo, cost:cost, gain:gain, name:(state.pseudo||"Quelqu'un")});
   };
 });
 
@@ -2291,8 +2291,15 @@ setInterval(refreshNotifs, 700);
       if(d.t==="msg"){ addMsg("them", d.text); }
       else if(d.t==="like"){ onPeerLike(); }
       else if(d.t==="decide"){ partnerDecision=!!d.yes; if(typeof renderPartner==="function") renderPartner(); if(typeof resolve==="function") resolve(); }
+      else if(d.t==="flower"){
+        // la personne en face t'a offert une fleur : tu la vois et tu gagnes le même temps
+        if(typeof flyFlower==="function") flyFlower(d.emo||"🌹", d.cost||1);
+        if(typeof boostTimer==="function") boostTimer(d.gain||10, "Fleur "+(d.emo||"🌹")+" +temps");
+        addMsg("them", "🌹 "+((d.name&&d.name.trim())?d.name:(partner?partner.nom:"La personne"))+" t'a offert une fleur "+(d.emo||"🌹")+" 🥰");
+      }
     };
   }
+  window.sdlDC=(o)=>dcSend(o);   // permet aux autres parties du code (fleurs) d'envoyer via la liaison directe
 
   async function onMatched(m){
     teardownPeer();
