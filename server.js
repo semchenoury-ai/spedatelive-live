@@ -158,16 +158,35 @@ const wss = new WebSocketServer({ server });
 let waiting = [];
 let nextId = 1;
 function send(ws, obj) { try { ws.send(JSON.stringify(obj)); } catch (e) {} }
+function ageOK(pref, age) {
+  if (!pref) return true;                 // pas de filtre d'âge
+  age = parseInt(age, 10); if (!age) return true;  // âge inconnu → on laisse passer
+  if (pref === "18-30") return age >= 18 && age <= 30;
+  if (pref === "30+")   return age >= 30;
+  return true;
+}
+// Deux personnes sont compatibles si TOUS leurs critères mutuels sont respectés
 function compatible(a, b) {
   if (a.id === b.id) return false;
+  // genre recherché (mutuel)
   const aWantsB = a.pref === "tous" || a.pref === b.genre;
   const bWantsA = b.pref === "tous" || b.pref === a.genre;
   if (!aWantsB || !bWantsA) return false;
+  // pays ("all" = peu importe)
   if (a.pays !== "all" && a.pays !== b.origine) return false;
   if (b.pays !== "all" && b.pays !== a.origine) return false;
+  // âge (filtre VIP : 18-30 / 30+)
+  if (!ageOK(a.agePref, b.age)) return false;
+  if (!ageOK(b.agePref, a.age)) return false;
+  // couleur de cheveux (filtre VIP) — on ne bloque que si l'info de l'autre est connue
+  if (a.hairPref && b.hair && a.hairPref !== b.hair) return false;
+  if (b.hairPref && a.hair && b.hairPref !== a.hair) return false;
+  // ville visée (filtre VIP)
+  if (a.villeCible && b.ville && a.villeCible !== b.ville) return false;
+  if (b.villeCible && a.ville && b.villeCible !== a.ville) return false;
   return true;
 }
-function publicInfo(u){ return { genre:u.genre, origine:u.origine, pseudo:u.pseudo||"" }; }
+function publicInfo(u){ return { genre:u.genre, origine:u.origine, pseudo:u.pseudo||"", age:u.age||null, hair:u.hair||null, ville:u.ville||null }; }
 function tryMatch(user){
   for (let i=0;i<waiting.length;i++){ const other=waiting[i];
     if (compatible(user, other)){
@@ -186,7 +205,15 @@ wss.on("connection",(ws)=>{
   const user={ id:nextId++, ws, room:null };
   ws.on("message",(raw)=>{
     let msg; try{ msg=JSON.parse(raw); }catch(e){ return; }
-    if(msg.type==="join"){ user.genre=msg.genre; user.pref=msg.pref; user.origine=msg.origine||"all"; user.pays=msg.pays||"all"; user.pseudo=msg.pseudo||""; requeue(user); }
+    if(msg.type==="join"){
+      user.genre=msg.genre; user.pref=msg.pref;
+      user.origine=msg.origine||"all"; user.pays=msg.pays||"all";
+      user.age=msg.age||null; user.agePref=msg.agePref||null;
+      user.hair=msg.hair||null; user.hairPref=msg.hairPref||null;
+      user.ville=msg.ville||null; user.villeCible=msg.villeCible||null;
+      user.pseudo=msg.pseudo||"";
+      requeue(user);
+    }
     else if(msg.type==="signal"){ if(user.room && user.room.ws.readyState===1) send(user.room.ws,{type:"signal",data:msg.data}); }
     else if(msg.type==="next"){ leaveRoom(user,true); requeue(user); }
     else if(msg.type==="stop"){ leaveRoom(user,true); waiting=waiting.filter(u=>u.id!==user.id); }

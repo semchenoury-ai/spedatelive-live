@@ -2241,7 +2241,15 @@ setInterval(refreshNotifs, 700);
   function dcSend(o){ try{ if(dc&&dc.readyState==="open") dc.send(JSON.stringify(o)); }catch(e){} }
 
   function joinPayload(){
-    return {type:"join", genre:state.genre, pref:state.pref, origine:state.origine||"fr", pays:state.cible||"all", pseudo:(state.pseudo||"")};
+    return {
+      type:"join",
+      genre:state.genre, pref:state.pref,
+      origine:state.origine||"fr", pays:state.cible||"all",
+      age:state.ageMine||null, agePref:(state.msgUnlimited?state.agePref:null)||null,
+      hair:state.hairMine||null, hairPref:(state.msgUnlimited?state.hairPref:null)||null,
+      ville:state.villeMienne||null, villeCible:(state.premium?state.villeCible:null)||null,
+      pseudo:(state.pseudo||"")
+    };
   }
 
   function connect(){
@@ -2301,11 +2309,16 @@ setInterval(refreshNotifs, 700);
     }
     const peer=m.peer||{};
     const nom=(peer.pseudo&&peer.pseudo.trim())?peer.pseudo.trim():"Quelqu'un";
-    partner={ nom, age:"", pays:peer.origine||"", g:peer.genre||"", ville:null, pid:++pidCounter, real:true };
+    partner={ nom, age:peer.age||"", pays:peer.origine||"", g:peer.genre||"", hair:peer.hair||null, ville:peer.ville||null, pid:++pidCounter, real:true };
     iLiked=false; window._partnerLike=false;
     const lb=document.getElementById("likeBtn"); if(lb) lb.style.background="linear-gradient(135deg,var(--rouge),var(--rose))";
     document.getElementById("msgs").innerHTML="";
-    document.getElementById("partnerTag").textContent = nom + (FLAGS[partner.pays]?(" "+FLAGS[partner.pays]):"");
+    // Étiquette : Nom, âge · cheveux · ville (ville visible seulement en VIP/premium)
+    const HAIR_EMO={blond:"🟡",roux:"🟠",chatain:"🟤",blanc:"⚪"};
+    let tag=nom + (partner.age?(", "+partner.age):"");
+    if(partner.hair && HAIR_EMO[partner.hair]) tag+=" · "+HAIR_EMO[partner.hair];
+    if(partner.ville) tag+= state.premium ? (" · 📍"+partner.ville) : " · 📍🔒";
+    document.getElementById("partnerTag").textContent = tag;
     document.getElementById("partnerFlag").textContent = FLAGS[partner.pays]||"🌍";
     if(typeof reparseEmoji==="function") reparseEmoji();
     info("💚 Connecté(e) en direct ! Dis bonjour 👋");
