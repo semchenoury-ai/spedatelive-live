@@ -653,7 +653,7 @@
       <button class="btn" id="lgBtn">Se connecter 💫</button>
       <p style="text-align:center;color:#ffb8cd;font-size:13px;margin-top:12px">Pas encore de compte ? <a href="#" id="goSignup" style="color:#fff;font-weight:700">Créer un compte</a></p>
     </div>
-    <small class="legal">Démo : ton compte reste sur ton appareil, rien n'est envoyé sur un serveur.</small>
+    <small class="legal">🔒 Ton compte est enregistré en toute sécurité : reconnecte-toi depuis n'importe quel appareil. Mot de passe chiffré.</small>
   </div>
 
   <!-- MODE D'EMPLOI -->
@@ -2419,6 +2419,115 @@ setInterval(refreshNotifs, 700);
     document.body.classList.remove("started");
     window.scrollTo(0,0);
   };
+})();
+
+/* =================================================================
+   COMPTES RÉELS — inscription / connexion / profil via l'API serveur.
+   ================================================================= */
+(function(){
+  const TK="sdl_token";
+  const getToken=()=>{ try{ return localStorage.getItem(TK)||""; }catch(e){ return ""; } };
+  const setToken=(t)=>{ try{ t?localStorage.setItem(TK,t):localStorage.removeItem(TK); }catch(e){} };
+  async function api(path, method, body){
+    const opt={ method, headers:{} }; const tk=getToken();
+    if(tk) opt.headers["Authorization"]="Bearer "+tk;
+    if(body!==undefined){ opt.headers["Content-Type"]="application/json"; opt.body=JSON.stringify(body); }
+    let r; try{ r=await fetch(path,opt); }catch(e){ return {ok:false,status:0,data:{error:"Connexion au serveur impossible."}}; }
+    let data={}; try{ data=await r.json(); }catch(e){}
+    return { ok:r.ok, status:r.status, data };
+  }
+  window.sdlApi=api;
+
+  function applyUser(u){
+    if(!u) return;
+    if(u.pseudo){ state.pseudo=u.pseudo; const pp=document.getElementById("profPseudo"); if(pp) pp.value=u.pseudo; }
+    if(u.age){ state.ageMine=u.age; const pa=document.getElementById("profAge"); if(pa) pa.value=u.age; const am=document.getElementById("ageMine"); if(am) am.value=u.age; }
+    if(u.genre) state.genre=u.genre;
+    if(u.pref) state.pref=u.pref;
+    if(u.origine) state.origine=u.origine;
+    if(u.cible) state.cible=u.cible;
+    if(u.photo && typeof applyPhoto==="function") applyPhoto(u.photo);
+    try{ localStorage.setItem("sdl_user",JSON.stringify({pseudo:u.pseudo,email:u.email})); }catch(e){}
+  }
+  function showApp(){ document.getElementById("account").style.display="none"; document.getElementById("intro").style.display="block"; }
+
+  // Inscription
+  document.getElementById("acCreate").onclick=async()=>{
+    const p=document.getElementById("acPseudo").value.trim();
+    const em=document.getElementById("acEmail").value.trim();
+    const pw=document.getElementById("acPass").value;
+    const warn=document.getElementById("acWarn"); const show=(t)=>{warn.textContent=t;warn.style.display="block";};
+    if(!p) return show("Choisis un pseudo.");
+    if(!em.includes("@")) return show("Entre une adresse e-mail valide.");
+    if(pw.length<6) return show("Ton mot de passe doit faire au moins 6 caractères.");
+    warn.style.display="none";
+    const btn=document.getElementById("acCreate"), old=btn.textContent; btn.textContent="… création"; btn.disabled=true;
+    const r=await api("/api/signup","POST",{pseudo:p,email:em,password:pw});
+    btn.textContent=old; btn.disabled=false;
+    if(!r.ok) return show(r.data.error||"Impossible de créer le compte.");
+    setToken(r.data.token); applyUser(r.data.user); showApp(); reparseEmoji&&reparseEmoji();
+  };
+
+  // Connexion
+  document.getElementById("lgBtn").onclick=async()=>{
+    const em=document.getElementById("lgEmail").value.trim();
+    const pw=document.getElementById("lgPass").value;
+    if(!em.includes("@")){ alert("Entre ton e-mail."); return; }
+    const btn=document.getElementById("lgBtn"), old=btn.textContent; btn.textContent="… connexion"; btn.disabled=true;
+    const r=await api("/api/login","POST",{email:em,password:pw});
+    btn.textContent=old; btn.disabled=false;
+    if(!r.ok){ alert(r.data.error||"Connexion impossible."); return; }
+    setToken(r.data.token); applyUser(r.data.user); showApp(); reparseEmoji&&reparseEmoji();
+  };
+
+  // Enregistrer le profil (pseudo, âge) côté serveur
+  const spf=document.getElementById("saveProfile");
+  if(spf) spf.onclick=async()=>{
+    const p=document.getElementById("profPseudo").value.trim();
+    const ag=parseInt(document.getElementById("profAge").value,10);
+    const patch={};
+    if(p){ state.pseudo=p; patch.pseudo=p; }
+    if(ag>=18&&ag<=99){ state.ageMine=ag; const a=document.getElementById("ageMine"); if(a)a.value=ag; if(typeof checkReady==="function") checkReady(); patch.age=ag; }
+    const b=document.getElementById("saveProfile"); b.textContent="✅ Enregistré";
+    await api("/api/profile","POST",patch);
+    setTimeout(()=>b.textContent="💾 Enregistrer",1400);
+  };
+
+  // Changer le mot de passe côté serveur
+  const svp=document.getElementById("savePass");
+  if(svp) svp.onclick=async()=>{
+    const v=document.getElementById("newPass").value, n=document.getElementById("passNote");
+    if(v.length<6){ n.style.color="#ff7a94"; n.textContent="Au moins 6 caractères."; return; }
+    const r=await api("/api/password","POST",{password:v});
+    if(r.ok){ n.style.color="#7dff9b"; n.textContent="Mot de passe mis à jour ✅"; document.getElementById("newPass").value=""; }
+    else { n.style.color="#ff7a94"; n.textContent=r.data.error||"Erreur."; }
+  };
+
+  // Photo de profil → sauvegardée sur le compte
+  const pin=document.getElementById("profPhotoInput");
+  if(pin) pin.addEventListener("change",(e)=>{
+    const f=e.target.files&&e.target.files[0]; if(!f) return;
+    const rd=new FileReader(); rd.onload=()=>{ api("/api/profile","POST",{photo:rd.result}); }; rd.readAsDataURL(f);
+  });
+
+  // Déconnexion : efface le jeton
+  document.getElementById("set-logout").onclick=()=>{ setToken(""); try{localStorage.removeItem("sdl_user");localStorage.removeItem("sdl_state");}catch(e){} location.reload(); };
+
+  // À la première connexion au live : enregistrer les critères sur le compte
+  const startBtn=document.getElementById("start");
+  if(startBtn){ const prev=startBtn.onclick;
+    startBtn.onclick=function(ev){ if(getToken()) api("/api/profile","POST",{genre:state.genre,pref:state.pref,origine:state.origine,cible:state.cible}); if(typeof prev==="function") return prev.call(this,ev); };
+  }
+
+  // Au chargement : restaurer la session via le jeton
+  document.getElementById("account").style.display="block";
+  document.getElementById("intro").style.display="none";
+  (async()=>{
+    if(!getToken()) return;
+    const r=await api("/api/me","GET");
+    if(r.ok){ applyUser(r.data.user); showApp(); reparseEmoji&&reparseEmoji(); }
+    else setToken("");
+  })();
 })();
 </script>
 </body>
