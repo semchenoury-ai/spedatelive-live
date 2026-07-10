@@ -2,24 +2,32 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>SpeeDateLive — Rencontres en live</title>
+<meta name="description" content="SpeeDateLive — le speed dating en live. Rencontre de vraies personnes en vidéo, en direct, selon tes critères.">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cdefs%3E%3ClinearGradient id='h' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23e8637e'/%3E%3Cstop offset='1' stop-color='%23c8415f'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M128 214 C 70 172, 28 138, 28 92 A 46 46 0 0 1 128 66 A 46 46 0 0 1 228 92 C 228 138, 186 172, 128 214 Z' fill='url(%23h)'/%3E%3Cg transform='translate(128 112)' fill='none' stroke='%23fff' stroke-linecap='round'%3E%3Ccircle r='46' stroke-width='9'/%3E%3Cline x1='0' y1='0' x2='0' y2='-30' stroke-width='9'/%3E%3Cline x1='0' y1='0' x2='22' y2='10' stroke-width='9'/%3E%3Ccircle r='5' fill='%23fff' stroke='none'/%3E%3C/g%3E%3C/svg%3E">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/twemoji.min.js" crossorigin="anonymous"></script>
 <style>
   :root{--rose:#ff4d79;--rouge:#e60043;--rose-clair:#ff8fab;--or:#ffd28f;}
   *{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',system-ui,-apple-system,sans-serif}
+  html,body{touch-action:manipulation}
   body{min-height:100vh;color:#fff;overflow-x:hidden;
     background:radial-gradient(circle at 20% 15%,#2a2a30,transparent 55%),
                radial-gradient(circle at 80% 85%,#1c1c22,transparent 55%),
                linear-gradient(135deg,#232327,#141416 55%,#000);}
+  img.emoji{height:1em;width:1em;margin:0 .05em 0 .1em;vertical-align:-0.12em;display:inline-block}
+  #localV{transform:scaleX(-1)}   /* mode selfie : effet miroir sur ta caméra (ordi + téléphone) */
   .hearts{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:0}
   .hearts span{position:absolute;bottom:-40px;color:var(--rose-clair);opacity:.3;animation:rise linear infinite;font-size:22px}
   @keyframes rise{to{transform:translateY(-110vh) rotate(360deg);opacity:0}}
   .wrap{position:relative;z-index:1;max-width:820px;margin:0 auto;padding:20px}
-  .logo{display:flex;align-items:center;gap:12px;margin:18px 0 8px}
-  .logo svg{width:48px;height:48px}
-  .logo h1{font-size:32px;font-weight:800;letter-spacing:-1px;
+  .logo{display:flex;align-items:center;gap:16px;margin:22px 0 8px}
+  .logo svg{width:64px;height:64px;flex:none}
+  .logo h1{font-size:44px;font-weight:800;letter-spacing:-1px;line-height:1;
     background:linear-gradient(90deg,var(--rose-clair),var(--rose),var(--or));
     -webkit-background-clip:text;background-clip:text;color:transparent}
+  .logo-txt p{color:#ffb8cd;font-size:14px;margin-top:3px}
+  @media(max-width:600px){.logo svg{width:44px;height:44px}.logo h1{font-size:30px}.logo-txt p{font-size:11px}}
   .card{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:20px;margin-top:14px}
   label.q{display:block;font-weight:600;margin:14px 0 7px;font-size:15px}
   .opts{display:flex;gap:8px;flex-wrap:wrap}
@@ -59,7 +67,10 @@
       <path d="M128 214 C 70 172, 28 138, 28 92 A 46 46 0 0 1 128 66 A 46 46 0 0 1 228 92 C 228 138, 186 172, 128 214 Z" fill="url(#hl)"/>
       <g transform="translate(128 112)" fill="none" stroke="#fff" stroke-linecap="round"><circle r="46" stroke-width="9"/><line x1="0" y1="0" x2="0" y2="-30" stroke-width="9"/><line x1="0" y1="0" x2="22" y2="10" stroke-width="9"/><circle r="5" fill="#fff" stroke="none"/></g>
     </svg>
-    <h1>SpeeDateLive</h1>
+    <div class="logo-txt">
+      <h1>SpeeDateLive</h1>
+      <p>Le speed dating en live — trouve l'amour en face caméra</p>
+    </div>
   </div>
 
   <!-- ACCUEIL / CRITÈRES -->
@@ -194,6 +205,10 @@ document.getElementById("stopBtn").onclick=()=>{
   document.getElementById("live").classList.add("hidden");
   document.getElementById("setup").classList.remove("hidden");
 };
+
+// Emojis identiques sur tous les appareils (Twemoji)
+function parseEmoji(){ try{ if(window.twemoji) twemoji.parse(document.body,{folder:"svg",ext:".svg"}); }catch(e){} }
+parseEmoji(); setInterval(parseEmoji, 1500);
 </script>
 </body>
 </html>
