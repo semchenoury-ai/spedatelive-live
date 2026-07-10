@@ -1874,6 +1874,7 @@ function activateBoost(min){
   document.getElementById("boostTab").style.display="block";
   document.getElementById("boostRing").style.display="block";
   drawBoost();
+  if(window.sdlWS) window.sdlWS({type:"boost", on:true});   // ← priorité RÉELLE côté serveur
   const info=document.getElementById("liveInfo");
   if(info) info.textContent=`🚀 Boost +${min} min ! Total : ${Math.ceil(boostT/60)} min. Tu passes en priorité 💞`;
   if(!boostInt){
@@ -1883,7 +1884,8 @@ function activateBoost(min){
         document.getElementById("boostLeft").textContent="Boost";
         document.getElementById("boostBadge").classList.remove("active");
         document.getElementById("boostTab").style.display="none";
-        document.getElementById("boostRing").style.display="none";}
+        document.getElementById("boostRing").style.display="none";
+        if(window.sdlWS) window.sdlWS({type:"boost", on:false});}   // ← fin de priorité
     },1000);
   }
 }
@@ -2248,6 +2250,7 @@ setInterval(refreshNotifs, 700);
       age:state.ageMine||null, agePref:(state.msgUnlimited?state.agePref:null)||null,
       hair:state.hairMine||null, hairPref:(state.msgUnlimited?state.hairPref:null)||null,
       ville:state.villeMienne||null, villeCible:(state.premium?state.villeCible:null)||null,
+      boost:(typeof boostT!=="undefined" && boostT>0),
       pseudo:(state.pseudo||"")
     };
   }
@@ -2265,6 +2268,7 @@ setInterval(refreshNotifs, 700);
         else if(m.type==="matched"){ onMatched(m); }
         else if(m.type==="signal"){ await onSignal(m.data); }
         else if(m.type==="peer-left"){ info("La personne est partie. On te cherche quelqu'un d'autre…"); teardownPeer(); wsSend({type:"next"}); showSearching(); }
+        else if(m.type==="recall-failed"){ if(typeof state!=="undefined"){ state.tokens=(state.tokens||0)+1; if(typeof updateTokens==="function") updateTokens(); } info("↩️ La personne n'est plus disponible — ton jeton t'a été remboursé."); }
       };
     });
   }
@@ -2300,6 +2304,7 @@ setInterval(refreshNotifs, 700);
     };
   }
   window.sdlDC=(o)=>dcSend(o);   // permet aux autres parties du code (fleurs) d'envoyer via la liaison directe
+  window.sdlWS=(o)=>wsSend(o);   // permet d'envoyer au serveur (boost) depuis ailleurs
 
   async function onMatched(m){
     teardownPeer();
@@ -2422,9 +2427,15 @@ setInterval(refreshNotifs, 700);
     if(typeof resolve==="function") resolve();
   };
 
-  // « Revenir » n'a pas de sens en direct
+  // « Revenir » : coûte 1 jeton, on tente de reconnecter la dernière personne (remboursé si elle est partie)
   const bb=document.getElementById("backBtn");
-  if(bb) bb.onclick=()=>info("↩️ « Revenir » n'est pas disponible en direct — la personne précédente est déjà repartie.");
+  if(bb) bb.onclick=()=>{
+    if(typeof state==="undefined") return;
+    if((state.tokens||0)<=0){ const tp=document.getElementById("tokenPaywall"); if(tp) tp.style.display="flex"; return; }
+    state.tokens--; if(typeof updateTokens==="function") updateTokens();
+    info("↩️ On essaie de te reconnecter avec la dernière personne…");
+    wsSend({type:"recall"});
+  };
 
   // Quitter le live → prévenir le serveur et couper proprement
   const qy=document.getElementById("quitYes");

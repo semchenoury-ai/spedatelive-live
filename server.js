@@ -187,22 +187,28 @@ function compatible(a, b) {
   return true;
 }
 function publicInfo(u){ return { genre:u.genre, origine:u.origine, pseudo:u.pseudo||"", age:u.age||null, hair:u.hair||null, ville:u.ville||null }; }
+// Cherche un partenaire compatible : les personnes BOOSTÉES passent en priorité
+function findMatchIndex(user){
+  for (let i=0;i<waiting.length;i++){ if (waiting[i].boost && compatible(user, waiting[i])) return i; }
+  for (let i=0;i<waiting.length;i++){ if (compatible(user, waiting[i])) return i; }
+  return -1;
+}
 function tryMatch(user){
-  for (let i=0;i<waiting.length;i++){ const other=waiting[i];
-    if (compatible(user, other)){
-      waiting.splice(i,1); waiting=waiting.filter(u=>u.id!==user.id);
-      user.room=other; other.room=user;
-      send(user.ws,{type:"matched",initiator:true, peer:publicInfo(other)});
-      send(other.ws,{type:"matched",initiator:false, peer:publicInfo(user)});
-      return true;
-    }
-  }
-  return false;
+  const i = findMatchIndex(user);
+  if (i < 0) return false;
+  const other = waiting[i];
+  waiting.splice(i,1); waiting = waiting.filter(u=>u.id!==user.id);
+  user.room = other; other.room = user;
+  send(user.ws,{type:"matched",initiator:true, peer:publicInfo(other)});
+  send(other.ws,{type:"matched",initiator:false, peer:publicInfo(user)});
+  return true;
 }
 function requeue(user){ waiting=waiting.filter(u=>u.id!==user.id); if(!tryMatch(user)){ waiting.push(user); send(user.ws,{type:"waiting",count:waiting.length}); } }
 function leaveRoom(user, notify){ const peer=user.room; user.room=null; if(peer){ peer.room=null; if(notify && peer.ws.readyState===1){ send(peer.ws,{type:"peer-left"}); requeue(peer); } } }
+const clients = new Map();   // id -> user, pour retrouver la dernière personne (fonction « Revenir »)
 wss.on("connection",(ws)=>{
-  const user={ id:nextId++, ws, room:null };
+  const user={ id:nextId++, ws, room:null, lastPeerId:null };
+  clients.set(user.id, user);
   ws.on("message",(raw)=>{
     let msg; try{ msg=JSON.parse(raw); }catch(e){ return; }
     if(msg.type==="join"){
@@ -211,14 +217,32 @@ wss.on("connection",(ws)=>{
       user.age=msg.age||null; user.agePref=msg.agePref||null;
       user.hair=msg.hair||null; user.hairPref=msg.hairPref||null;
       user.ville=msg.ville||null; user.villeCible=msg.villeCible||null;
+      user.boost=!!msg.boost;
       user.pseudo=msg.pseudo||"";
       requeue(user);
     }
+    else if(msg.type==="boost"){ user.boost = !!msg.on; }  // active/désactive la priorité
     else if(msg.type==="signal"){ if(user.room && user.room.ws.readyState===1) send(user.room.ws,{type:"signal",data:msg.data}); }
-    else if(msg.type==="next"){ leaveRoom(user,true); requeue(user); }
+    else if(msg.type==="next"){
+      if(user.room) user.lastPeerId = user.room.id;   // on retient la personne qu'on quitte
+      leaveRoom(user,true); requeue(user);
+    }
+    else if(msg.type==="recall"){
+      // « Revenir » : on tente de reconnecter avec la dernière personne SI elle est encore libre
+      const peer = clients.get(user.lastPeerId);
+      if(peer && peer!==user && peer.ws.readyState===1 && !peer.room){
+        leaveRoom(user,true);                         // quitte la situation actuelle
+        waiting = waiting.filter(u=>u.id!==user.id && u.id!==peer.id);
+        user.room=peer; peer.room=user;
+        send(user.ws,{type:"matched",initiator:true, peer:publicInfo(peer)});
+        send(peer.ws,{type:"matched",initiator:false, peer:publicInfo(user)});
+      } else {
+        send(user.ws,{type:"recall-failed"});         // → le client rembourse le jeton
+      }
+    }
     else if(msg.type==="stop"){ leaveRoom(user,true); waiting=waiting.filter(u=>u.id!==user.id); }
   });
-  ws.on("close",()=>{ leaveRoom(user,true); waiting=waiting.filter(u=>u.id!==user.id); });
+  ws.on("close",()=>{ leaveRoom(user,true); waiting=waiting.filter(u=>u.id!==user.id); clients.delete(user.id); });
 });
 
 initDB().catch(e=>console.error("initDB:",e)).finally(()=>{
