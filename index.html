@@ -3,69 +3,624 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>SpeeDateLive — Rencontres en live</title>
-<meta name="description" content="SpeeDateLive — le speed dating en live. Rencontre de vraies personnes en vidéo, en direct, selon tes critères.">
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cdefs%3E%3ClinearGradient id='h' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23e8637e'/%3E%3Cstop offset='1' stop-color='%23c8415f'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M128 214 C 70 172, 28 138, 28 92 A 46 46 0 0 1 128 66 A 46 46 0 0 1 228 92 C 228 138, 186 172, 128 214 Z' fill='url(%23h)'/%3E%3Cg transform='translate(128 112)' fill='none' stroke='%23fff' stroke-linecap='round'%3E%3Ccircle r='46' stroke-width='9'/%3E%3Cline x1='0' y1='0' x2='0' y2='-30' stroke-width='9'/%3E%3Cline x1='0' y1='0' x2='22' y2='10' stroke-width='9'/%3E%3Ccircle r='5' fill='%23fff' stroke='none'/%3E%3C/g%3E%3C/svg%3E">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/twemoji.min.js" crossorigin="anonymous"></script>
+<title>SpeeDateLive — Trouve l'amour en live</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20256%20256%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22h%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%22%20stop-color%3D%22%23e8637e%22%2F%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%23c8415f%22%2F%3E%3C%2FlinearGradient%3E%3C%2Fdefs%3E%3Cpath%20d%3D%22M128%20214%20C%2070%20172%2C%2028%20138%2C%2028%2092%20A%2046%2046%200%200%201%20128%2066%20A%2046%2046%200%200%201%20228%2092%20C%20228%20138%2C%20186%20172%2C%20128%20214%20Z%22%20fill%3D%22url%28%23h%29%22%2F%3E%3Cg%20transform%3D%22translate%28128%20112%29%22%20fill%3D%22none%22%20stroke%3D%22%23fff%22%20stroke-linecap%3D%22round%22%3E%3Ccircle%20r%3D%2246%22%20stroke-width%3D%229%22%2F%3E%3Cline%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%220%22%20y2%3D%22-30%22%20stroke-width%3D%229%22%2F%3E%3Cline%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%2222%22%20y2%3D%2210%22%20stroke-width%3D%229%22%2F%3E%3Ccircle%20r%3D%225%22%20fill%3D%22%23fff%22%20stroke%3D%22none%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E">
 <style>
-  :root{--rose:#ff4d79;--rouge:#e60043;--rose-clair:#ff8fab;--or:#ffd28f;}
-  *{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',system-ui,-apple-system,sans-serif}
-  html,body{touch-action:manipulation}
-  body{min-height:100vh;color:#fff;overflow-x:hidden;
+  :root{
+    --rose:#ff4d79; --rouge:#e60043; --rose-clair:#ff8fab; --or:#ffd28f;
+    --fond:#1a0710; --carte:rgba(255,255,255,.08); --texte:#fff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',system-ui,sans-serif}
+  body{
+    min-height:100vh;color:var(--texte);overflow-x:hidden;
+    font-family:'Segoe UI',system-ui,-apple-system,'Noto Color Emoji','Apple Color Emoji','Segoe UI Emoji',sans-serif;
     background:radial-gradient(circle at 20% 15%,#2a2a30,transparent 55%),
                radial-gradient(circle at 80% 85%,#1c1c22,transparent 55%),
-               linear-gradient(135deg,#232327,#141416 55%,#000);}
+               linear-gradient(135deg,#232327,#141416 55%,#000000);
+  }
   img.emoji{height:1em;width:1em;margin:0 .05em 0 .1em;vertical-align:-0.12em;display:inline-block}
-  #localV{transform:scaleX(-1)}   /* mode selfie : effet miroir sur ta caméra (ordi + téléphone) */
+  html,body{touch-action:manipulation}   /* empêche le zoom au double-tap / tap rapide */
+  /* pastilles de notification (rouge) sur les flèches et les badges */
+  .notif-dot{position:absolute;top:-7px;right:-7px;min-width:18px;height:18px;padding:0 4px;box-sizing:border-box;
+    border-radius:9px;background:#ff2d55;color:#fff;font-size:10.5px;font-weight:800;line-height:18px;text-align:center;
+    display:none;box-shadow:0 2px 7px rgba(0,0,0,.45);z-index:6;pointer-events:none}
+  .notif-dot.show{display:block;animation:notifPop .3s ease}
+  @keyframes notifPop{from{transform:scale(0)}to{transform:scale(1)}}
+  /* ====== THÈME CLAIR (dégradé blanc) — cœurs gardés ====== */
+  body.light{color:#1c1622;
+    background:radial-gradient(circle at 20% 15%,#ffffff,transparent 55%),
+               radial-gradient(circle at 80% 85%,#fbeff4,transparent 55%),
+               linear-gradient(135deg,#ffffff,#f6eef2 55%,#ffe9f0);}
+  body.light .hearts span{color:#ff6f9c;opacity:.4}
+  body.light .card{background:rgba(0,0,0,.045);border-color:rgba(0,0,0,.1)}
+  body.light .ov{background:linear-gradient(160deg,#fff,#fbeef3);border-color:rgba(0,0,0,.1)}
+  body.light select,body.light input.field,body.light textarea.field,body.light #chatInput,body.light #threadInput{background:rgba(0,0,0,.06);color:#1c1622}
+  body.light .step{background:rgba(0,0,0,.05)}
+  body.light .set-line,body.light .crow,body.light .msg.them{background:rgba(0,0,0,.05);color:#1c1622}
+  body.light .paywall-card{background:linear-gradient(160deg,#ffffff,#fbeef3)!important;color:#1c1622}
+  body.light .ville-field,body.light .token-bar{background:rgba(0,0,0,.06);color:#1c1622}
+  body.light .opt{background:rgba(0,0,0,.05)}
+  /* textes clairs (inline) rendus lisibles sur fond blanc */
+  body.light [style*="color:#ffb8cd"]{color:#b8446e!important}
+  body.light [style*="color:#ffe6c2"]{color:#7a5326!important}
+  body.light [style*="color:#ffd28f"]{color:#b07a17!important}
+  body.light [style*="color:#8a6672"],body.light [style*="color:#8a8a90"],body.light [style*="color:#c99"]{color:#777!important}
+  body.light .logo p,body.light .intro-sub,body.light .auto-note,body.light .opt-note,body.light .paid-line{color:#b8446e}
+  body.light .paid-title{color:#b07a17}
+  body.light small.legal{color:#999}
+  /* boutons & cases blancs → foncés pour être visibles */
+  body.light .top-btn{background:rgba(0,0,0,.06);border-color:rgba(0,0,0,.15);color:#1c1622}
+  body.light [style*="rgba(255,255,255,.12)"],
+  body.light [style*="rgba(255,255,255,.14)"],
+  body.light [style*="rgba(255,255,255,.15)"]{background:rgba(0,0,0,.06)!important;color:#1c1622!important}
+  body.light .chev,body.light .set-line .chev{color:#b8446e}
+  body.light .mini-buy{background:rgba(0,0,0,.07);border-color:rgba(0,0,0,.2);color:#5a2a3a}
+  body.light .cbtn.next{color:#1c1622}
+  body.light .clabel{color:#b8446e}
+  body.light .set-line b,body.light .step .t b,body.light h2,body.light h3,body.light h4,body.light label.q{color:#1c1622}
+  body.light .paid-line b,body.light .paid-hint{color:#8a3358}
+  /* ===== Corrections thème CLAIR : tout doit rester bien visible ===== */
+  /* Boutons ronds du live (Passer, Revenir, etc.) : contour noir sur fond blanc */
+  body.light .cbtn{border:2px solid rgba(0,0,0,.5)}
+  body.light .cbtn.next{background:rgba(0,0,0,.05);color:#1c1622}
+  /* "Mon profil" en haut à droite : pastille blanche + texte noir, lisible partout */
+  body.light #profileBadge{background:rgba(255,255,255,.9);color:#1c1622;box-shadow:0 4px 14px rgba(0,0,0,.18)}
+  body.light #profileBadge .pb-lbl{color:#1c1622}
+  /* Bouton "Quitter" du live : reste blanc, il est posé sur la vidéo sombre */
+  body.light #quitLive{background:rgba(0,0,0,.5)!important;color:#fff!important;border-color:rgba(255,255,255,.35)!important}
+  /* Fenêtres d'achat (VIP, jetons, boost) : contenu lisible sur la carte blanche */
+  body.light .paywall-card .price{color:#1c1622}
+  body.light .paywall-card ul,body.light .paywall-card li{color:#3a2a30}
+  body.light ul.vip-owned li{color:#1c1622}
+  body.light .old-price,body.light .bo-note{color:#a05a2a}
+  body.light .bo-price{color:#b07a17}
+  body.light .bo-dur{color:#1c1622}
+  body.light .boost-opt{background:rgba(0,0,0,.05);border-color:rgba(0,0,0,.14);color:#1c1622}
+  body.light .boost-opt:hover{background:rgba(0,0,0,.09)}
+  body.light .boost-opt.best{background:rgba(255,210,143,.35);border-color:#c8912e}
+  body.light .pack-upsell{background:rgba(255,210,143,.35);border-color:#c8912e;color:#5a3a10}
+  body.light .pack-upsell b{color:#b07a17}
+  /* ---- Live : garde son habillage sombre même en thème clair (écriture blanche) ---- */
+  body.light #live .msg.them{background:rgba(255,255,255,.16);color:#fff}
+  body.light #live .msg.me{color:#fff}
+  body.light #live #chatInput{background:rgba(255,255,255,.14)!important;color:#fff!important}
+  body.light #live .vid .tag,body.light #live .timer,body.light #live #timer,
+  body.light #live .flag,body.light #live #partnerTag,body.light #live .tag{color:#fff}
+  /* Minuteur en NOIR quand le thème est clair */
+  body.light .gauge-lbl{color:#111}
+  /* ---- Messages reçus lisibles (noir) en thème clair, dans la messagerie ---- */
+  body.light #thread .msg.them,body.light #threadMsgs .msg.them{background:rgba(0,0,0,.06);color:#1c1622}
+  body.light #inbox .crow .preview{color:#3a2a30}
+  /* ---- Pas de débordement des messages + repli des messages longs ---- */
+  .msg{overflow-wrap:anywhere;word-break:break-word}
+  .msg.clamp{cursor:pointer}
+  .msg.clamp:not(.open){display:-webkit-box;-webkit-line-clamp:6;-webkit-box-orient:vertical;overflow:hidden}
+  /* champs de saisie du chat : 16px pour éviter le zoom auto du téléphone */
+  #chatInput,#threadInput,.chat input{font-size:16px}
+  /* bulles de la conversation : plus larges (jusqu'au bord) et jamais de débordement */
+  #threadMsgs{overflow-x:hidden}
+  #threadMsgs .msg{max-width:92%}
+  /* En-tête de la conversation : ← Messages à gauche, 🚫 Bloquer à droite, le nom seul en dessous */
+  #thread .live-top{align-items:center;gap:8px}
+  #thread #threadName{flex:1 1 100%;order:3;text-align:center;margin-top:8px;align-self:auto}
+  /* bandeau "débloqué" en haut de la conversation */
+  .thread-open{background:rgba(125,255,155,.14);border:1px solid rgba(125,255,155,.4);color:#c9ffd6;
+    border-radius:12px;padding:8px 12px;font-size:12.5px;font-weight:700;text-align:center;margin-bottom:10px}
+  body.light .thread-open{background:rgba(30,160,80,.12);border-color:rgba(30,160,80,.4);color:#1c6b3a}
+  /* aperçu du dernier message dans la liste : une ligne nette, sans débordement */
+  .crow .ci .preview{display:block}
+
   .hearts{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:0}
-  .hearts span{position:absolute;bottom:-40px;color:var(--rose-clair);opacity:.3;animation:rise linear infinite;font-size:22px}
+  .hearts span{position:absolute;bottom:-40px;color:var(--rose-clair);opacity:.35;
+    animation:rise linear infinite;font-size:22px}
   @keyframes rise{to{transform:translateY(-110vh) rotate(360deg);opacity:0}}
-  .wrap{position:relative;z-index:1;max-width:820px;margin:0 auto;padding:20px}
-  .logo{display:flex;align-items:center;gap:16px;margin:22px 0 8px}
-  .logo svg{width:64px;height:64px;flex:none}
-  .logo h1{font-size:44px;font-weight:800;letter-spacing:-1px;line-height:1;
+  .wrap{position:relative;z-index:1;max-width:900px;margin:0 auto;padding:24px}
+  #profileBadge{position:fixed;top:14px;right:14px;z-index:41;cursor:pointer;
+    border:none;border-radius:26px;padding:5px 14px 5px 5px;
+    background:rgba(255,255,255,.12);box-shadow:0 6px 18px rgba(0,0,0,.35);
+    display:flex;align-items:center;gap:9px;color:#fff;font-weight:800;font-size:14px;transition:.15s}
+  #profileBadge:hover{transform:translateY(-2px);background:rgba(255,255,255,.2)}
+  #profileBadge .pb-av{width:38px;height:38px;border-radius:50%;overflow:hidden;flex:none;
+    border:2px solid rgba(255,255,255,.6);background:linear-gradient(135deg,#e8637e,#c8415f);
+    display:flex;align-items:center;justify-content:center;font-size:19px}
+  #profileBadge img{width:100%;height:100%;object-fit:cover;display:none}
+  #tokenBadge{position:fixed;top:70px;right:14px;z-index:40;cursor:pointer;
+    background:linear-gradient(135deg,rgba(255,179,71,.95),rgba(255,210,143,.95));color:#1a0710;
+    border:none;border-radius:22px;padding:9px 15px;font-size:15px;font-weight:800;
+    box-shadow:0 6px 20px rgba(255,179,71,.45);transition:.15s}
+  #tokenBadge:hover{transform:translateY(-2px)}
+  #tokenBadge b{font-size:16px}
+  #contactsBadge,#inboxBadge{position:fixed;left:14px;z-index:40;cursor:pointer;
+    background:linear-gradient(135deg,#e60043,#ff4d79);color:#fff;
+    border:none;border-radius:24px;padding:12px 22px;font-size:16px;font-weight:800;min-width:172px;text-align:left;
+    box-shadow:0 6px 20px rgba(230,0,67,.45);transition:.15s}
+  #contactsBadge b,#inboxBadge b{float:right}
+  #contactsBadge{top:14px}
+  #inboxBadge{top:64px;background:linear-gradient(135deg,#8a5cff,#c9a0ff)}
+  #contactsBadge:hover,#inboxBadge:hover{transform:translateY(-2px)}
+  #vipBadge{position:fixed;top:114px;right:14px;z-index:40;cursor:pointer;
+    background:linear-gradient(135deg,#8a5cff,#c9a0ff);color:#1a0710;
+    border:none;border-radius:22px;padding:9px 15px;font-size:15px;font-weight:800;
+    box-shadow:0 6px 20px rgba(138,92,255,.45);transition:.15s}
+  #vipBadge:hover{transform:translateY(-2px)}
+  #vipBadge.active{background:linear-gradient(135deg,#ffb347,#ffd28f);box-shadow:0 6px 20px rgba(255,179,71,.55)}
+  #vipBadge b{font-size:15px}
+  .vip-pct{background:#e60043;color:#fff;font-size:11px;font-weight:800;border-radius:10px;padding:1px 6px;margin-left:2px}
+
+  /* Boost */
+  .boost-opts{display:flex;gap:12px;margin-bottom:14px}
+  .boost-opt{position:relative;flex:1;background:rgba(255,255,255,.07);border:2px solid transparent;
+    border-radius:16px;padding:18px 10px 14px;cursor:pointer;color:#fff;display:flex;flex-direction:column;
+    align-items:center;gap:4px;transition:.15s}
+  .boost-opt:hover{background:rgba(255,255,255,.14);transform:translateY(-3px)}
+  .boost-opt.best{border-color:var(--or);background:rgba(255,210,143,.14)}
+  .bo-dur{font-size:15px;font-weight:800}
+  .bo-price{font-size:18px;font-weight:900;color:var(--or)}
+  .bo-note{font-size:11px;color:#c99;text-decoration:line-through}
+  .bo-badge{position:absolute;top:-11px;background:#e60043;color:#fff;font-size:11px;font-weight:800;
+    padding:2px 9px;border-radius:20px}
+  /* Badge Boost actif (haut à droite) */
+  /* Anneau-jauge Boost AUTOUR de ta vidéo (extérieur, visible par toi seulement) */
+  .vid-wrap{position:relative}
+  #boostRing{display:none;position:absolute;top:-6px;left:-6px;width:calc(100% + 12px);height:calc(100% + 12px);
+    z-index:6;pointer-events:none;overflow:visible}
+  #boostRect{filter:drop-shadow(0 0 4px rgba(255,120,90,.95))}
+  /* Étiquette Boost à cheval sur le bord haut (moitié dessus / moitié dans le live) */
+  #boostTab{display:none;position:absolute;top:-15px;left:50%;transform:translateX(-50%);z-index:7;
+    background:linear-gradient(135deg,#ff5c8a,#ff9a3d,#ffd28f);color:#1a0710;font-weight:800;font-size:13px;
+    padding:6px 14px;border-radius:14px;white-space:nowrap;box-shadow:0 4px 14px rgba(255,92,138,.55)}
+  /* Bandeau plein écran désactivé */
+  #boostFrame{display:none !important}
+  #boostFrameLabel{position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:55;
+    background:linear-gradient(135deg,#ff5c8a,#ffb347);color:#fff;font-weight:800;font-size:14px;
+    padding:6px 16px;border-radius:20px;box-shadow:0 4px 14px rgba(255,92,138,.5)}
+  #boostRecharge{position:fixed;top:204px;right:14px;z-index:40;
+    background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);color:#c9c2c8;
+    border-radius:18px;padding:6px 12px;font-size:12px;font-weight:600}
+  #boostRecharge b{color:#e9e2e8}
+  #boostBadge.has-credit{box-shadow:0 0 0 2px #ffd28f, 0 6px 20px rgba(255,92,138,.6);animation:pulseLow 1.1s infinite}
+  #boostBadge.has-credit::after{content:"🎁";position:absolute;top:-8px;right:-6px;font-size:14px}
+  #boostBadge{position:fixed;top:158px;right:14px;z-index:40;
+    background:linear-gradient(135deg,#ff5c8a,#ff9a3d);color:#fff;
+    border:none;border-radius:22px;padding:9px 15px;font-size:14px;font-weight:800;
+    box-shadow:0 6px 20px rgba(255,92,138,.5)}
+
+  /* Header */
+  .logo{display:flex;align-items:center;gap:16px;margin:22px 0 8px;text-align:left}
+  .brand-icon{width:68px;height:68px;flex:none;filter:drop-shadow(0 4px 10px rgba(0,0,0,.25))}
+  .logo h1{font-size:46px;font-weight:800;letter-spacing:-1px;
     background:linear-gradient(90deg,var(--rose-clair),var(--rose),var(--or));
     -webkit-background-clip:text;background-clip:text;color:transparent}
-  .logo-txt p{color:#ffb8cd;font-size:14px;margin-top:3px}
-  @media(max-width:600px){.logo svg{width:44px;height:44px}.logo h1{font-size:30px}.logo-txt p{font-size:11px}}
-  .card{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:20px;margin-top:14px}
-  label.q{display:block;font-weight:600;margin:14px 0 7px;font-size:15px}
-  .opts{display:flex;gap:8px;flex-wrap:wrap}
-  .opt{flex:1;min-width:88px;padding:11px 8px;border-radius:12px;cursor:pointer;text-align:center;
-    background:rgba(255,255,255,.06);border:2px solid transparent;font-weight:600;font-size:14px;transition:.15s}
-  .opt.sel{border-color:var(--rose);background:rgba(255,77,121,.22)}
-  .opt .emo{font-size:22px;display:block;margin-bottom:3px}
-  select{width:100%;padding:11px;border-radius:11px;font-size:14px;border:none;background:rgba(255,255,255,.12);color:#fff;outline:none}
+  .logo p{color:#ffb8cd;font-size:14px;margin-top:2px}
+
+  .card{background:var(--carte);backdrop-filter:blur(12px);
+    border:1px solid rgba(255,255,255,.12);border-radius:22px;padding:20px;margin-top:18px}
+
+  label.q{display:block;font-weight:600;margin:13px 0 6px;font-size:14px}
+  .opts{display:flex;gap:7px;flex-wrap:wrap}
+  .opt{flex:1;min-width:78px;padding:8px 6px;border-radius:11px;cursor:pointer;text-align:center;
+    background:rgba(255,255,255,.06);border:2px solid transparent;transition:.15s;font-weight:600;font-size:13px}
+  .opt:hover{background:rgba(255,255,255,.12)}
+  .opt.sel{border-color:var(--rose);background:rgba(255,77,121,.22);
+    box-shadow:0 0 14px rgba(255,77,121,.35)}
+  .opt .emo{font-size:20px;display:block;margin-bottom:2px}
+  select,input.field{width:100%;padding:10px;border-radius:11px;font-size:14px;border:none;
+    background:rgba(255,255,255,.12);color:#fff;outline:none}
   select option{color:#111}
-  .btn{display:block;width:100%;margin-top:20px;padding:15px;border:none;border-radius:14px;font-size:17px;font-weight:800;cursor:pointer;color:#fff;
-    background:linear-gradient(90deg,var(--rouge),var(--rose));box-shadow:0 8px 24px rgba(230,0,67,.45)}
-  .btn:active{transform:scale(.97)}
-  .btn.grey{background:rgba(255,255,255,.14);box-shadow:none}
-  .stage{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:6px}
-  @media(max-width:620px){.stage{grid-template-columns:1fr}}
-  .vid{position:relative;border-radius:18px;overflow:hidden;aspect-ratio:3/4;background:#111;border:2px solid rgba(255,255,255,.1)}
-  .vid video{width:100%;height:100%;object-fit:cover;background:#111}
-  .vid .tag{position:absolute;left:10px;bottom:10px;background:rgba(0,0,0,.55);padding:5px 12px;border-radius:20px;font-size:14px;font-weight:600}
-  .controls{display:flex;gap:12px;justify-content:center;margin-top:16px;flex-wrap:wrap}
-  .cbtn{border:none;border-radius:14px;padding:14px 20px;font-size:15px;font-weight:800;cursor:pointer;color:#fff}
-  .cbtn.next{background:rgba(255,255,255,.14)}
-  .cbtn.stop{background:rgba(255,80,80,.25)}
-  .info{text-align:center;color:#ffb8cd;font-size:15px;margin-top:14px;min-height:20px}
-  .status{display:inline-block;background:rgba(0,0,0,.4);padding:8px 16px;border-radius:20px;font-weight:700;margin-top:10px}
-  .hidden{display:none}
-  .spin{width:44px;height:44px;border:5px solid rgba(255,255,255,.2);border-top-color:var(--rose);border-radius:50%;animation:sp 1s linear infinite;margin:20px auto}
-  @keyframes sp{to{transform:rotate(360deg)}}
-  small.legal{display:block;text-align:center;color:#8a8a90;margin-top:18px;font-size:12px;line-height:1.6}
+  input.field::placeholder{color:#ffb8cd}
+  .start-hint{color:#ff7a94;font-size:12px;margin-top:7px;text-align:center;line-height:1.4}
+
+  .btn{display:block;width:100%;margin-top:26px;padding:17px;border:none;border-radius:16px;
+    font-size:18px;font-weight:800;cursor:pointer;color:#fff;
+    background:linear-gradient(90deg,var(--rouge),var(--rose));
+    box-shadow:0 10px 30px rgba(230,0,67,.45);transition:.2s}
+  .btn:hover{transform:translateY(-2px);box-shadow:0 14px 38px rgba(230,0,67,.6)}
+  .btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+
+  /* Live */
+  #live{display:none}
+  .stage{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:10px}
+  /* fenêtre courte (ordi petit écran) : on raccourcit les vidéos pour tout voir sans descendre */
+  @media(max-height:720px){.vid{aspect-ratio:auto!important;height:52vh!important}}
+  @media(max-height:560px){.vid{height:44vh!important}}
+  .vid{position:relative;border-radius:20px;overflow:hidden;aspect-ratio:3/4;
+    background:#2a0512;border:2px solid rgba(255,255,255,.1)}
+  .vid video,.vid img{width:100%;height:100%;object-fit:cover}
+  #me{transform:scaleX(-1)}   /* mode selfie : effet miroir sur ta caméra */
+  .cbtn.muted{background:rgba(255,80,80,.35)!important}
+  .vid .tag{position:absolute;left:10px;bottom:10px;background:rgba(0,0,0,.55);
+    padding:6px 12px;border-radius:20px;font-size:14px;font-weight:600}
+  .vid .flag{position:absolute;right:10px;top:10px;font-size:26px;
+    background:rgba(0,0,0,.4);border-radius:10px;padding:2px 6px}
+  .compat{position:absolute;left:10px;top:10px;background:linear-gradient(135deg,#1fae52,#7dff9b);
+    color:#062b12;font-weight:800;font-size:14px;padding:5px 11px;border-radius:20px;box-shadow:0 3px 10px rgba(0,0,0,.3)}
+  .interets{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:10px}
+  .itag{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.16);border-radius:20px;
+    padding:5px 11px;font-size:13px;color:#fff}
+  .itag.match{background:rgba(125,255,155,.18);border-color:rgba(125,255,155,.5);color:#c9ffd6;font-weight:700}
+  /* Profil : s'ouvre en PLEINE PAGE */
+  #profile.ov{top:0;left:0;transform:none;width:100vw;max-width:none;height:100vh;max-height:none;
+    border-radius:0;padding:24px;border:none}
+  #profile > *{max-width:600px;margin-left:auto;margin-right:auto}
+  #profile .prof-head{max-width:600px;margin-left:auto;margin-right:auto}
+  /* les champs sont inline-block par défaut → on les met en block pour qu'ils se centrent aussi */
+  #profile .field{display:block;width:100%;box-sizing:border-box}
+  /* Profil / compte */
+  .prof-head{display:flex;align-items:center;gap:14px;margin-bottom:8px}
+  .prof-photo{width:76px;height:76px;border-radius:50%;overflow:hidden;flex:none;
+    background:linear-gradient(135deg,#e8637e,#c8415f);display:flex;align-items:center;justify-content:center;
+    font-size:34px;border:2px solid rgba(255,255,255,.5)}
+  .prof-photo img{width:100%;height:100%;object-fit:cover;display:none}
+  .set-list{display:flex;flex-direction:column;gap:8px}
+  .set-line{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;text-align:left;
+    background:rgba(255,255,255,.06);border:none;border-radius:12px;padding:13px 14px;color:#fff;font-size:14px;
+    font-weight:600;cursor:pointer;transition:.15s}
+  .set-line:hover{background:rgba(255,255,255,.12)}
+  .set-line .chev{color:#ffb8cd;font-size:20px}
+  .set-line.danger{color:#ff8fab}
+  .sub-pan{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px;margin-top:12px}
+  .sub-note{color:#7dff9b;font-size:13px;margin-top:8px;min-height:16px}
+  .sub-head{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+  .sub-head h3{margin:0;font-size:19px}
+  /* Sous-page ouverte : on masque le reste du profil, seule la page active s'affiche */
+  #profile.sub-open > *{display:none!important}
+  #profile.sub-open > .sub-pan.active{display:block!important;background:transparent;border:none;padding:0;margin-top:0}
+  /* transitions douces entre écrans */
+  #account,#intro,#onboarding{animation:fadeUp .35s ease}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+  /* panneaux centrés : garder le centrage pendant l'animation (sinon ils partent à droite) */
+  #contacts,#inbox,#thread{animation:fadeUpC .35s ease}
+  @keyframes fadeUpC{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%)}}
+  .btn:active,.opt:active,.cbtn:active,.top-btn:active{transform:scale(.96)}
+  .timer{position:absolute;left:50%;top:10px;transform:translateX(-50%);
+    background:rgba(0,0,0,.55);padding:6px 14px;border-radius:20px;font-weight:700;font-size:14px}
+
+  .controls{display:flex;gap:12px;justify-content:center;margin-top:18px;flex-wrap:wrap;align-items:flex-start}
+  .ctrl{display:flex;flex-direction:column;align-items:center;gap:6px}
+  .clabel{font-size:12px;font-weight:600;color:#ffb8cd;text-align:center;max-width:72px;line-height:1.2}
+  .cbtn{width:66px;height:66px;border-radius:50%;border:none;cursor:pointer;font-size:26px;
+    display:flex;align-items:center;justify-content:center;transition:.2s;color:#fff}
+  .cbtn:hover{transform:scale(1.1)}
+  .next{background:rgba(255,255,255,.14)}
+  .like{background:linear-gradient(135deg,var(--rouge),var(--rose));
+    box-shadow:0 8px 24px rgba(230,0,67,.5);width:78px;height:78px;font-size:32px}
+  .info{text-align:center;color:#ffb8cd;font-size:14px;margin-top:10px}
+
+  /* Jauge de temps */
+  .gauge{display:flex;align-items:center;gap:12px;margin-top:16px}
+  .gauge-track{position:relative;flex:1;height:14px;border-radius:20px;overflow:visible;
+    background:rgba(255,255,255,.1);box-shadow:inset 0 0 6px rgba(0,0,0,.35)}
+  .gauge-fill{height:100%;width:100%;border-radius:20px;
+    background:linear-gradient(90deg,var(--rouge),var(--rose),var(--or));
+    transition:width 1s linear;box-shadow:0 0 12px rgba(255,77,121,.6)}
+  .gauge-fill.low{background:linear-gradient(90deg,#b30036,#ff4d79);
+    animation:pulseLow .8s ease-in-out infinite}
+  @keyframes pulseLow{0%,100%{opacity:1}50%{opacity:.55}}
+  .gauge-fill.boost{transition:width .6s cubic-bezier(.34,1.56,.64,1)}
+  .gauge-heart{position:absolute;top:50%;left:100%;transform:translate(-50%,-50%);
+    font-size:20px;filter:drop-shadow(0 0 6px rgba(255,77,121,.9));transition:left 1s linear;pointer-events:none}
+  .gauge-heart.pop{animation:heartPop .7s ease}
+  @keyframes heartPop{0%{transform:translate(-50%,-50%) scale(1)}
+    40%{transform:translate(-50%,-140%) scale(1.9)}100%{transform:translate(-50%,-50%) scale(1)}}
+  .gauge-lbl{font-weight:800;font-size:15px;min-width:46px;text-align:right;color:#fff}
+  .boost-txt{position:absolute;left:50%;top:-26px;transform:translateX(-50%);
+    color:var(--or);font-weight:800;font-size:13px;opacity:0}
+  .boost-txt.show{animation:floatUp 1.1s ease}
+  @keyframes floatUp{0%{opacity:0;transform:translate(-50%,6px)}
+    30%{opacity:1}100%{opacity:0;transform:translate(-50%,-22px)}}
+
+  /* Chat */
+  .chat{margin-top:14px;background:rgba(0,0,0,.25);border-radius:16px;padding:12px}
+  .msgs{max-height:120px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;margin-bottom:8px}
+  .msg{padding:7px 12px;border-radius:14px;font-size:14px;max-width:80%}
+  .msg.me{align-self:flex-end;background:var(--rose)}
+  .msg.them{align-self:flex-start;background:rgba(255,255,255,.16)}
+  .msg.sys{align-self:center;background:rgba(255,210,143,.16);color:#ffd28f;font-size:12px;
+    font-weight:600;text-align:center;max-width:95%;border-radius:12px}
+  .chat form{display:flex;gap:8px}
+  .chat input{flex:1;padding:11px;border-radius:12px;border:none;outline:none;
+    background:rgba(255,255,255,.14);color:#fff}
+  .chat button{padding:0 18px;border:none;border-radius:12px;background:var(--rose);
+    color:#fff;font-weight:700;cursor:pointer}
+
+  /* Match overlay */
+  #match{display:none;position:fixed;inset:0;z-index:50;
+    background:radial-gradient(circle,#e60043,#1a0710);
+    align-items:center;justify-content:center;flex-direction:column;text-align:center;padding:24px}
+  #match h2{font-size:56px;font-weight:900;margin-bottom:8px;animation:pop .5s}
+  @keyframes pop{from{transform:scale(0)}to{transform:scale(1)}}
+  #match p{font-size:18px;color:#ffd6e2;margin-bottom:26px}
+  #match .btn{max-width:280px}
+  .badge{display:inline-block;background:rgba(0,0,0,.3);padding:6px 14px;border-radius:20px;
+    font-size:13px;color:#ffb8cd;margin-top:14px}
+  #matchTimer{display:inline-block;background:rgba(0,0,0,.35);border:1px solid rgba(255,210,143,.5);
+    color:var(--or);font-weight:800;font-size:15px;padding:6px 16px;border-radius:20px;margin-bottom:14px}
+  #matchTimer.urgent{color:#ff7a94;border-color:#ff7a94;animation:pulseLow .7s infinite}
+  .match-q{font-size:16px;color:#ffe0e9;max-width:380px;margin:0 auto 18px;line-height:1.5}
+  .decisions{display:flex;flex-direction:column;gap:10px;width:100%;max-width:360px;margin-bottom:8px}
+  .drow{display:flex;align-items:center;justify-content:space-between;gap:12px;
+    background:rgba(0,0,0,.3);border-radius:16px;padding:12px 16px}
+  .dname{font-weight:700;font-size:16px}
+  .dstatus{display:flex;gap:8px;align-items:center;font-weight:700;font-size:15px}
+  .dstatus.waiting{color:#ffd28f}
+  .dstatus.ok{color:#7dff9b}
+  .dstatus.no{color:#ff7a94}
+  .dbtn{border:none;border-radius:12px;padding:10px 14px;font-weight:800;font-size:14px;cursor:pointer;transition:.15s}
+  .dbtn:hover{transform:translateY(-2px)}
+  .dbtn.yes{background:linear-gradient(135deg,#1fae52,#7dff9b);color:#062b12}
+  .dbtn.no{background:rgba(255,255,255,.14);color:#fff}
+  .dbtn:disabled{opacity:.4;cursor:default;transform:none}
+  .match-note{font-size:14px;color:#ffd28f;min-height:20px;margin:10px 0}
+  @keyframes stampIn{from{transform:scale(1.6);opacity:0}to{transform:scale(1);opacity:1}}
+  .stamp{animation:stampIn .35s ease}
+  small.legal{display:block;text-align:center;color:#8a6672;margin-top:26px;font-size:12px;line-height:1.6}
+  .auto-note{font-size:12px;font-weight:500;color:#ffd28f;margin-left:6px}
+  .lock-badge{font-size:12px;font-weight:700;color:#1a0710;background:var(--or);
+    padding:3px 9px;border-radius:20px;margin-left:6px;vertical-align:middle}
+  .ville-lock{display:flex;flex-direction:column;gap:12px;align-items:flex-start;
+    background:rgba(255,210,143,.08);border:1px dashed rgba(255,210,143,.5);
+    border-radius:16px;padding:16px;font-size:14px;color:#ffe6c2}
+  .ville-lock button{background:linear-gradient(90deg,#ffb347,#ffd28f);color:#1a0710;
+    border:none;padding:12px 20px;border-radius:12px;font-weight:800;font-size:15px;cursor:pointer;
+    box-shadow:0 8px 22px rgba(255,179,71,.4);transition:.2s}
+  .ville-lock button:hover{transform:translateY(-2px)}
+  /* Paywall modal */
+  #paywall{display:none;position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.7);
+    align-items:center;justify-content:center;padding:20px}
+  .paywall-card{background:linear-gradient(160deg,#2a0512,#1a0710);border:1px solid rgba(255,210,143,.4);
+    border-radius:24px;padding:30px;max-width:360px;width:100%;text-align:center}
+  .paywall-card h3{font-size:24px;margin-bottom:6px;color:var(--or)}
+  .paywall-card .price{font-size:40px;font-weight:900;margin:14px 0;color:#fff}
+  .old-price{font-size:20px;font-weight:700;color:#c99;text-decoration:line-through;margin-left:8px;vertical-align:middle}
+  .paywall-card ul{list-style:none;text-align:left;margin:16px 0;font-size:14px;color:#ffe6c2}
+  .paywall-card li{margin:8px 0}
+  .paywall-card .pay{background:linear-gradient(90deg,#ffb347,#ffd28f);color:#1a0710}
+  ul.vip-owned{list-style:none;text-align:left;margin:14px 0}
+  ul.vip-owned li{margin:9px 0;font-size:14px;color:#eafff0;padding-left:26px;position:relative}
+  ul.vip-owned li::before{content:"✅";position:absolute;left:0}
+  .paywall-card .cancel{background:transparent;box-shadow:none;color:#ffb8cd;font-weight:600}
+
+  /* Champ ville cliquable (prix caché) */
+  .opt-note{font-size:12px;color:#ffb8cd;font-weight:500}
+  .ville-field{display:flex;align-items:center;justify-content:space-between;cursor:pointer;
+    padding:10px 12px;border-radius:11px;background:rgba(255,255,255,.12);color:#fff;transition:.15s;font-size:13.5px}
+  .ville-field:hover{background:rgba(255,255,255,.18)}
+  .ville-field .chev{font-size:22px;color:#ffb8cd}
+
+  /* Mode d'emploi */
+  #intro{}
+  .intro-title{font-size:40px;font-weight:800;letter-spacing:-1px;text-align:center;line-height:1.05;
+    background:linear-gradient(90deg,var(--rose-clair),var(--rose),var(--or));
+    -webkit-background-clip:text;background-clip:text;color:transparent;margin-bottom:8px}
+  .intro-sub{text-align:center;color:#ffb8cd;font-size:15px;margin-bottom:6px}
+  .steps{display:flex;flex-direction:column;gap:10px;margin:16px 0}
+  .step{display:flex;gap:12px;align-items:flex-start;background:rgba(255,255,255,.06);
+    border-radius:14px;padding:12px 14px}
+  .step .n{flex:none;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;
+    justify-content:center;font-weight:800;font-size:16px;
+    background:linear-gradient(135deg,var(--rouge),var(--rose));box-shadow:0 3px 12px rgba(230,0,67,.4)}
+  .step .t{font-size:14.5px;line-height:1.45}
+  .step .t b{color:#fff}
+
+  /* Case options payantes */
+  .paid-box{background:rgba(255,210,143,.09);border:1px solid rgba(255,210,143,.45);
+    border-radius:16px;padding:14px 16px;margin:6px 0 16px}
+  .paid-title{font-weight:800;color:var(--or);font-size:15px;margin-bottom:10px}
+  .paid-line{display:flex;justify-content:space-between;gap:12px;align-items:center;width:100%;
+    text-align:left;background:transparent;border:none;cursor:pointer;
+    font-size:14px;color:#ffe6c2;padding:11px 0;border-top:1px solid rgba(255,210,143,.18);transition:.15s}
+  .paid-line:first-of-type{border-top:none}
+  .paid-line:hover{color:#fff}
+  .paid-line b{color:#fff}
+  .paid-line .chev{flex:none;font-size:22px;color:var(--or)}
+  .paid-hint{font-size:12px;color:#c99;margin-top:8px;text-align:center}
+  .paid-line.vip{background:rgba(255,210,143,.12);border-radius:12px;padding:12px;border-top:none;margin-top:6px}
+  .paid-line.vip b{color:var(--or)}
+  .pack-upsell{margin-top:14px;background:rgba(255,210,143,.14);border:1px solid rgba(255,210,143,.5);
+    border-radius:14px;padding:11px;font-size:13.5px;color:#ffe6c2;cursor:pointer;transition:.15s}
+  .pack-upsell:hover{background:rgba(255,210,143,.24)}
+  .pack-upsell b{color:var(--or)}
+
+  /* Jetons */
+  .token-bar{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:12px;
+    font-size:14px;color:#ffe6c2}
+  .token-bar b{color:var(--or);font-size:16px}
+  .mini-buy{background:rgba(255,210,143,.18);border:1px solid rgba(255,210,143,.5);color:#ffe6c2;
+    border-radius:20px;padding:5px 12px;font-size:13px;font-weight:700;cursor:pointer;transition:.15s}
+  .mini-buy:hover{background:rgba(255,210,143,.3)}
+
+  /* Barre du haut du live */
+  /* Panneaux Messages / Rencontres ouverts par-dessus le live */
+  .ov{position:fixed;top:120px;left:50%;transform:translateX(-50%);margin:0;
+    width:min(400px, calc(100vw - 28px));max-width:none;height:auto;max-height:calc(100vh - 140px);
+    z-index:45;overflow-y:auto;background:linear-gradient(160deg,#2a0512,#160409);
+    border:1px solid rgba(255,255,255,.14);border-radius:18px;box-shadow:0 14px 44px rgba(0,0,0,.65);padding:18px}
+  #thread.ov{z-index:46}
+
+  .live-top{display:flex;justify-content:space-between;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+  .top-btn{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);color:#fff;
+    border-radius:12px;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer;transition:.15s}
+  .top-btn:hover{background:rgba(255,255,255,.2)}
+
+  /* Liste de rencontres */
+  .clist{display:flex;flex-direction:column;gap:10px}
+  .clist:empty::after{content:"— personne pour l'instant —";color:#8a6672;font-size:13px;font-style:italic}
+  .crow{display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.06);border-radius:14px;padding:10px 12px}
+  .crow img{width:46px;height:46px;border-radius:50%;object-fit:cover;background:#2a0512;flex:none}
+  .crow .ci{flex:1;min-width:0}
+  .crow .ci b{font-size:15px}
+  .crow .ci small{display:block;color:#ffb8cd;font-size:12px}
+  .crow .cmsg{flex:none;border:none;border-radius:12px;padding:9px 12px;font-weight:800;font-size:13px;cursor:pointer;
+    background:linear-gradient(90deg,var(--rouge),var(--rose));color:#fff;transition:.15s}
+  .crow .cmsg:hover{transform:translateY(-2px)}
+  .crow .cmsg.sent{background:rgba(125,255,155,.2);color:#7dff9b;cursor:default;transform:none}
+  .crow.thread-row{cursor:pointer}
+  .crow.thread-row:hover{background:rgba(255,255,255,.12)}
+  .crow .ci .preview{color:#cfa;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .unread-dot{flex:none;width:11px;height:11px;border-radius:50%;background:var(--rose);box-shadow:0 0 8px var(--rose)}
+  .crow .paidtag{flex:none;font-size:11px;color:#ffd28f;background:rgba(255,210,143,.15);border-radius:10px;padding:2px 7px}
+
+  /* Bouton fleur */
+  .cbtn.flower{background:linear-gradient(135deg,#ff5c8a,#ffa8c5)}
+  /* Sélecteur de fleurs */
+  .flower-picker{display:none;margin-top:14px;background:rgba(0,0,0,.3);border-radius:18px;padding:16px;text-align:center}
+  .fp-title{font-weight:700;margin-bottom:4px;font-size:15px}
+  .fp-sub{font-size:12.5px;color:#ffd28f;margin-bottom:14px}
+  .fp-time{font-size:12px;font-weight:700;color:#7dff9b}
+  .fp-opts{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+  .fp-opt{flex:1;min-width:90px;background:rgba(255,255,255,.07);border:2px solid transparent;
+    border-radius:16px;padding:14px 8px;cursor:pointer;color:#fff;display:flex;flex-direction:column;
+    align-items:center;gap:6px;transition:.15s}
+  .fp-opt:hover{background:rgba(255,255,255,.14);border-color:var(--rose);transform:translateY(-3px)}
+  .fp-lbl{font-size:13px;font-weight:600}
+  .fp-cost{font-size:13px;font-weight:800;color:var(--or)}
+  .fp-close{margin-top:12px;background:transparent;border:none;color:#ffb8cd;font-weight:600;cursor:pointer;font-size:14px}
+
+  /* Fleur qui monte sur la vidéo */
+  .flying-flower{position:absolute;left:50%;bottom:8%;transform:translateX(-50%);
+    pointer-events:none;z-index:5;animation:flyUp 2.4s ease-out forwards}
+  @keyframes flyUp{
+    0%{transform:translate(-50%,0) scale(.4) rotate(0);opacity:0}
+    15%{opacity:1}
+    70%{opacity:1}
+    100%{transform:translate(-50%,-260px) scale(1.1) rotate(18deg);opacity:0}}
+
+  /* Les badges n'apparaissent qu'après « J'ai compris » (sinon ils cachent le logo) */
+  /* flèches + cadres pour ranger les badges (téléphone seulement) */
+  .badge-arrow,.badge-frame{display:none}
+  body.hide-left-badges #contactsBadge,body.hide-left-badges #inboxBadge{display:none!important}
+  body.hide-right-badges #tokenBadge,body.hide-right-badges #vipBadge,body.hide-right-badges #boostBadge,body.hide-right-badges #boostRecharge{display:none!important}
+  body.hide-left-badges #leftFrame,body.hide-right-badges #rightFrame{display:none!important}
+  body:not(.started) .badge-arrow,body.in-profile .badge-arrow,
+  body:not(.started) .badge-frame,body.in-profile .badge-frame{display:none!important}
+  /* dans le profil : on ne garde que le badge profil */
+  body.in-profile #contactsBadge,body.in-profile #inboxBadge,body.in-profile #tokenBadge,
+  body.in-profile #vipBadge,body.in-profile #boostBadge,body.in-profile #boostRecharge,
+  body.in-profile #profileBadge{display:none!important}
+  body:not(.started) #profileBadge,
+  body:not(.started) #contactsBadge,
+  body:not(.started) #inboxBadge,
+  body:not(.started) #tokenBadge,
+  body:not(.started) #vipBadge,
+  body:not(.started) #boostBadge,
+  body:not(.started) #boostRecharge{display:none !important}
+
+  /* ====== Version allégée pour téléphone ====== */
+  @media (max-width:600px){
+    .wrap{padding:10px}
+    .logo{margin:8px 0 2px;gap:8px}
+    .logo .brand-icon{width:34px;height:34px}
+    .logo h1{font-size:23px}
+    .logo p{font-size:10px}
+    .card{padding:15px;border-radius:18px}
+
+    /* Mode d'emploi bien plus court */
+    #intro h2{font-size:16px;margin-bottom:2px}
+    #intro > p{font-size:11px;margin-bottom:2px}
+    .steps{gap:5px;margin:9px 0}
+    .step{padding:6px 9px;border-radius:10px;gap:8px}
+    .step .n{width:21px;height:21px;font-size:12px}
+    .step .t{font-size:11.5px;line-height:1.28}
+    .paid-box{padding:9px 11px;margin:2px 0 10px}
+    .paid-title{font-size:12.5px;margin-bottom:5px}
+    .paid-line{font-size:11px;padding:6px 0}
+    .paid-hint{font-size:10px}
+    #introBtn{padding:13px;font-size:16px;margin-top:14px}
+
+    /* Sur téléphone : badges tout petits, texte minuscule, collés aux bords */
+    #contactsBadge,#inboxBadge{left:4px;padding:4px 8px;font-size:9.5px;min-width:0;border-radius:16px;gap:5px}
+    #contactsBadge .blbl,#inboxBadge .blbl{font-size:9.5px}
+    #contactsBadge b,#inboxBadge b{font-size:10px}
+    #contactsBadge{top:8px}#inboxBadge{top:40px}
+    #profileBadge{right:4px;top:8px;padding:3px 8px 3px 3px;font-size:9.5px;gap:5px}
+    #profileBadge .pb-lbl{font-size:9.5px}
+    #profileBadge .pb-av{width:26px;height:26px;font-size:13px}
+    #tokenBadge,#vipBadge,#boostBadge{right:4px;padding:4px 8px;font-size:10px}
+    #tokenBadge{top:46px}
+    #vipBadge{top:78px}
+    #boostBadge{top:110px}
+    #boostRecharge{right:4px;top:142px;font-size:9px;padding:3px 7px}
+    .badge-arrow{display:flex;position:fixed;z-index:42;width:22px;height:22px;align-items:center;justify-content:center;
+      background:rgba(0,0,0,.55);color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:50%;font-size:14px;font-weight:800;padding:0;cursor:pointer}
+    #collapseLeft{left:5px;top:70px}
+    #collapseRight{right:5px;top:166px}
+    /* cadres transparents qui entourent les groupes d'icônes */
+    .badge-frame{display:block;position:fixed;z-index:39;pointer-events:none;
+      border:1.5px dashed rgba(255,255,255,.35);border-radius:14px;background:rgba(255,255,255,.04)}
+    #leftFrame{left:1px;top:3px;width:132px;height:66px}
+    #rightFrame{right:1px;top:41px;width:104px;height:116px}
+    .ov{top:150px;max-height:calc(100vh - 165px)}
+    /* Live PLEIN ÉCRAN sur mobile : bords collés, vidéos côte à côte */
+    /* on annule le padding de .wrap (10px) pour toucher VRAIMENT les bords du téléphone */
+    #live{margin-left:-10px;margin-right:-10px;margin-top:3px}
+    #live .card{padding:0;background:transparent;border:none;position:relative}
+    #live .live-top{position:absolute;top:6px;left:6px;z-index:9;margin:0}
+    #quitLive{font-size:9.5px;padding:5px 9px;border-radius:14px}
+    .stage{grid-template-columns:1fr 1fr;gap:2px;margin-top:0}
+    /* coins carrés : les vidéos collent aux bords du téléphone et entre elles */
+    .vid{aspect-ratio:auto;height:50vh;border-radius:0}
+    .vid .tag{font-size:11px;padding:3px 8px;left:6px;bottom:6px}
+    .timer,.compat{font-size:12px;padding:3px 9px}
+    /* la jauge est juste SOUS le live : son bord haut touche les vidéos (pas de marge) */
+    .gauge{margin-top:0;padding:0 4px;gap:8px}
+    .controls{gap:7px;margin-top:9px}
+    /* Barre jetons : encadrée, compacte et sur deux lignes (plus de débordement) */
+    .token-bar{flex-wrap:wrap;gap:6px 8px;margin:10px 8px 0;padding:9px 10px;font-size:12px;
+      background:rgba(255,210,143,.08);border:1px solid rgba(255,210,143,.25);border-radius:14px}
+    .token-bar b{font-size:13px}
+    .mini-buy{padding:5px 11px;font-size:11.5px}
+    .cbtn{width:50px;height:50px;font-size:20px}
+    .cbtn.like{width:58px;height:58px;font-size:25px}
+    .clabel{font-size:9.5px;max-width:52px}
+    /* Bannières d'achat adaptées au téléphone */
+    .paywall-card{padding:18px 16px;max-width:340px}
+    .paywall-card h3{font-size:20px}
+    .paywall-card .price{font-size:30px;margin:8px 0}
+    .old-price{font-size:16px}
+    .paywall-card ul{font-size:12.5px;margin:10px 0}
+    .paywall-card li{margin:5px 0}
+    .paywall-card p{font-size:12px}
+    .boost-opts{gap:8px}
+    .boost-opt{padding:12px 6px 10px}
+    .bo-dur{font-size:13px}.bo-price{font-size:15px}
+    .btn.pay,.btn.cancel{padding:12px;font-size:15px}
+  }
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/twemoji.min.js" crossorigin="anonymous"></script>
 </head>
 <body>
 <div class="hearts" id="hearts"></div>
+
+<!-- Accès Mes rencontres / Messages (toujours visibles, à gauche) -->
+<button id="contactsBadge" title="Mes rencontres">💌 <span class="blbl">Rencontres</span> <b id="contactsCount">0</b></button>
+<button id="inboxBadge" title="Messages">💬 <span class="blbl">Messages</span> <b id="inboxCount">0</b></button>
+
+<!-- Mon profil / compte -->
+<button id="profileBadge" title="Mon profil"><span class="pb-av"><img id="profileBadgeImg" alt=""><span id="profileBadgeInit">👤</span></span><span class="pb-lbl">Mon profil</span></button>
+
+<!-- Compteur de jetons (toujours visible) -->
+<button id="tokenBadge" title="Recharger mes jetons">🎟️ <b id="tokenGlobal">0</b><span class="notif-dot" id="tokenDot"></span></button>
+<!-- Badge VIP -->
+<button id="vipBadge" title="Pack VIP">👑 <b id="vipState">VIP</b> <span class="vip-pct" id="vipPct">-43%</span></button>
+<!-- Badge Boost (toujours visible) -->
+<button id="boostBadge" title="Me mettre en avant">🚀 <b id="boostLeft">Boost</b><span class="notif-dot" id="boostDot"></span></button>
+<!-- Compteur gris : prochain boost cadeau VIP -->
+<div id="boostRecharge" style="display:none">🎁 Prochain boost dans <b id="rechargeTime">2j</b></div>
+<!-- cadres transparents qui regroupent visuellement les icônes (téléphone) -->
+<div id="leftFrame" class="badge-frame"></div>
+<div id="rightFrame" class="badge-frame"></div>
+<!-- flèches pour ranger les badges (téléphone) -->
+<button id="collapseLeft" class="badge-arrow" title="Ranger"><span class="arw">‹</span><span class="notif-dot" id="leftNotif"></span></button>
+<button id="collapseRight" class="badge-arrow" title="Ranger"><span class="arw">›</span><span class="notif-dot" id="rightNotif"></span></button>
+
 <div class="wrap">
   <div class="logo">
-    <svg viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
-      <defs><linearGradient id="hl" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e8637e"/><stop offset="1" stop-color="#c8415f"/></linearGradient></defs>
-      <path d="M128 214 C 70 172, 28 138, 28 92 A 46 46 0 0 1 128 66 A 46 46 0 0 1 228 92 C 228 138, 186 172, 128 214 Z" fill="url(#hl)"/>
-      <g transform="translate(128 112)" fill="none" stroke="#fff" stroke-linecap="round"><circle r="46" stroke-width="9"/><line x1="0" y1="0" x2="0" y2="-30" stroke-width="9"/><line x1="0" y1="0" x2="22" y2="10" stroke-width="9"/><circle r="5" fill="#fff" stroke="none"/></g>
+    <svg class="brand-icon" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg" aria-label="SpeeDateLive">
+      <defs><linearGradient id="hlogo" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e8637e"/><stop offset="1" stop-color="#c8415f"/></linearGradient></defs>
+      <path d="M128 214 C 70 172, 28 138, 28 92 A 46 46 0 0 1 128 66 A 46 46 0 0 1 228 92 C 228 138, 186 172, 128 214 Z" fill="url(#hlogo)"/>
+      <g transform="translate(128 112)" fill="none" stroke="#fff" stroke-linecap="round">
+        <circle r="46" stroke-width="9"/><line x1="0" y1="0" x2="0" y2="-30" stroke-width="9"/><line x1="0" y1="0" x2="22" y2="10" stroke-width="9"/><circle r="5" fill="#fff" stroke="none"/>
+      </g>
     </svg>
     <div class="logo-txt">
       <h1>SpeeDateLive</h1>
@@ -73,16 +628,87 @@
     </div>
   </div>
 
-  <!-- ACCUEIL / CRITÈRES -->
-  <div id="setup" class="card">
-    <h2 style="font-size:20px;margin-bottom:4px">Rencontres en live 💘</h2>
-    <p style="color:#ffb8cd;font-size:13px">Tu vas être mis(e) en relation avec de <b>vraies personnes</b> connectées en même temps que toi.</p>
+  <!-- CRÉATION DE COMPTE -->
+  <div id="account" class="card">
+    <h2 style="font-size:26px;margin-bottom:4px">Créer ton compte</h2>
+    <p style="color:#ffb8cd;font-size:14px;margin-bottom:6px">Rejoins SpeeDateLive et commence à faire des rencontres en live 💘</p>
 
+    <div id="signupForm">
+      <label class="q">Pseudo</label>
+      <input type="text" id="acPseudo" class="field" placeholder="Ton pseudo">
+      <label class="q">Adresse e-mail</label>
+      <input type="email" id="acEmail" class="field" placeholder="ton@email.com">
+      <label class="q">Mot de passe</label>
+      <input type="password" id="acPass" class="field" placeholder="••••••••">
+      <div id="acWarn" style="display:none;color:#ff7a94;font-size:12px;margin-top:6px"></div>
+      <button class="btn" id="acCreate">Créer mon compte 💖</button>
+      <p style="text-align:center;color:#ffb8cd;font-size:13px;margin-top:12px">Déjà inscrit ? <a href="#" id="goLogin" style="color:#fff;font-weight:700">Se connecter</a></p>
+    </div>
+
+    <div id="loginForm" style="display:none">
+      <label class="q">Adresse e-mail</label>
+      <input type="email" id="lgEmail" class="field" placeholder="ton@email.com">
+      <label class="q">Mot de passe</label>
+      <input type="password" id="lgPass" class="field" placeholder="••••••••">
+      <button class="btn" id="lgBtn">Se connecter 💫</button>
+      <p style="text-align:center;color:#ffb8cd;font-size:13px;margin-top:12px">Pas encore de compte ? <a href="#" id="goSignup" style="color:#fff;font-weight:700">Créer un compte</a></p>
+    </div>
+    <small class="legal">Démo : ton compte reste sur ton appareil, rien n'est envoyé sur un serveur.</small>
+  </div>
+
+  <!-- MODE D'EMPLOI -->
+  <div id="intro" class="card" style="display:none">
+    <h1 class="intro-title">Comment ça marche&nbsp;?</h1>
+    <p class="intro-sub">Le principe : des rencontres en live, à la recherche de l'amour ❤️</p>
+    <div class="steps">
+      <div class="step"><span class="n">1</span><span class="t"><b>Live vidéo</b> avec une personne, <b>90 s</b> pour discuter (chat + voix).</span></div>
+      <div class="step"><span class="n">2</span><span class="t"><b>⏭️ Passer</b> si ça n'accroche pas.</span></div>
+      <div class="step"><span class="n">3</span><span class="t"><b>❤️ Coup de cœur</b> → le temps remonte. Réciproque = <b>match 💖</b></span></div>
+      <div class="step"><span class="n">4</span><span class="t">Après un match, si vous êtes d'accord : <b>+3 min</b> ensemble.</span></div>
+      <div class="step"><span class="n">5</span><span class="t">Tu choisis le <b>genre</b> et le <b>pays</b> des gens à croiser — les rencontres restent <b>au hasard</b>.</span></div>
+      <div class="step"><span class="n">6</span><span class="t"><b>🎟️ Jetons</b> : tu as passé quelqu'un et tu changes d'avis ? Reviens sur cette personne. Tu peux aussi offrir des fleurs (elles font gagner du temps, selon la fleur).</span></div>
+      <div class="step"><span class="n">7</span><span class="t"><b>🚀 Boost</b> : tu passes <b>avant tout le monde</b> → beaucoup plus de rencontres, plus vite.</span></div>
+      <div class="step"><span class="n">8</span><span class="t"><b>👑 VIP</b> : choisis les cheveux et l'âge à rencontrer, débloque ta ville, un Boost rechargé tout seul tous les 2 jours et les messages illimités.</span></div>
+    </div>
+
+    <div class="paid-box">
+      <div class="paid-title">💳 Les options payantes</div>
+      <div style="background:rgba(125,255,155,.12);border:1px solid rgba(125,255,155,.4);border-radius:12px;padding:9px 11px;margin-bottom:9px;font-size:12.5px;color:#c9ffd6">🎁 <b>3 jetons offerts</b> pour bien démarrer !</div>
+      <button class="paid-line" id="pl-ville"><span>📍 <b>Ma Ville</b> — croise uniquement la ville de ton choix (et vois leur ville).</span><span class="chev">›</span></button>
+      <button class="paid-line" id="pl-tokens"><span>🎟️ <b>Jetons</b> — tu as passé quelqu'un et tu changes d'avis ? Reviens sur cette personne. Sert aussi à offrir des fleurs (elles font gagner du temps, selon la fleur).</span><span class="chev">›</span></button>
+      <button class="paid-line" id="pl-flowers"><span>🌹 <b>Fleurs</b> — offre une fleur en live (elle te fait gagner du temps, plus ou moins selon la fleur).</span><span class="chev">›</span></button>
+      <button class="paid-line" id="pl-boost"><span>🚀 <b>Boost</b> — tu passes <b>avant tout le monde</b> → beaucoup plus de rencontres (5 ou 25 min).</span><span class="chev">›</span></button>
+      <button class="paid-line" id="pl-msg"><span>💬 <b>Messages</b> — ouvre une discussion, puis parlez <b>autant que vous voulez, gratuitement</b>.</span><span class="chev">›</span></button>
+      <button class="paid-line vip" id="pl-pack"><span>👑 <b>Pack VIP</b> — tout inclus : Ma Ville, filtres cheveux + âge, 20 jetons, Boost auto tous les 2 jours et messages illimités — au meilleur prix.</span><span class="chev">›</span></button>
+      <div class="paid-hint">Touche une option pour voir le prix et payer.</div>
+    </div>
+
+    <button class="btn" id="introBtn">J'ai compris 👍</button>
+  </div>
+
+  <!-- ONBOARDING -->
+  <div id="onboarding" class="card" style="display:none">
     <label class="q">Je suis…</label>
     <div class="opts" id="genre">
       <div class="opt" data-v="homme"><span class="emo">👨</span>Un homme</div>
       <div class="opt" data-v="femme"><span class="emo">👩</span>Une femme</div>
     </div>
+
+    <label class="q">Mon âge <span class="opt-note">(gratuit · 18+)</span></label>
+    <input type="number" id="ageMine" class="field" min="18" max="99" inputmode="numeric" placeholder="Ton âge exact">
+    <div id="ageWarn" style="display:none;color:#ff7a94;font-size:12px;margin-top:4px">Tu dois avoir au moins 18 ans.</div>
+    <div style="color:#ff7a94;font-size:11.5px;margin-top:4px">🔒 Ton âge est enregistré avec ton compte. Pour le modifier plus tard, va dans <b>Mon profil → Réglages</b>.</div>
+
+    <label class="q">Mes cheveux <span class="opt-note">(gratuit)</span></label>
+    <div class="opts" id="hair">
+      <div class="opt" data-v="blond"><span class="emo">🟡</span>Blond</div>
+      <div class="opt" data-v="roux"><span class="emo">🟠</span>Roux</div>
+      <div class="opt" data-v="chatain"><span class="emo">🟤</span>Châtain</div>
+      <div class="opt" data-v="blanc"><span class="emo">⚪</span>Blanc</div>
+    </div>
+
+    <label class="q">Je viens de…</label>
+    <select id="paysOrigine"></select>
 
     <label class="q">Je veux rencontrer…</label>
     <div class="opts" id="pref">
@@ -91,124 +717,1709 @@
       <div class="opt" data-v="tous"><span class="emo">💞</span>Tout le monde</div>
     </div>
 
-    <label class="q">Je viens de…</label>
-    <select id="origine"></select>
-    <label class="q">Je veux rencontrer des gens de…</label>
-    <select id="pays"></select>
+    <!-- VIP débloqué : ces sélecteurs apparaissent après l'achat -->
+    <label class="q" id="hairPrefLabel" style="display:none">Couleur de cheveux à rencontrer 👑</label>
+    <div class="opts" id="hairPref" style="display:none">
+      <div class="opt" data-v=""><span class="emo">💞</span>Peu importe</div>
+      <div class="opt" data-v="blond"><span class="emo">🟡</span>Blond</div>
+      <div class="opt" data-v="roux"><span class="emo">🟠</span>Roux</div>
+      <div class="opt" data-v="chatain"><span class="emo">🟤</span>Châtain</div>
+      <div class="opt" data-v="blanc"><span class="emo">⚪</span>Blanc</div>
+    </div>
+    <label class="q" id="agePrefLabel" style="display:none">Tranche d'âge à rencontrer 👑</label>
+    <div class="opts" id="agePref" style="display:none">
+      <div class="opt" data-v=""><span class="emo">💞</span>Tous les âges</div>
+      <div class="opt" data-v="18-30"><span class="emo">🌸</span>18 – 30 ans</div>
+      <div class="opt" data-v="30+"><span class="emo">🌹</span>30 ans et +</div>
+    </div>
 
-    <button class="btn" id="start" disabled>🎥 Démarrer le live</button>
-    <div id="setupHint" style="color:#ff7a94;font-size:12px;margin-top:8px;text-align:center"></div>
-    <small class="legal">⚠️ Réservé aux 18 ans et +. Sois respectueux(se). Ta caméra n'est partagée qu'avec la personne en face, en direct.</small>
+    <label class="q">De quel pays ? <span id="autoNote" class="auto-note"></span></label>
+    <select id="paysCible"></select>
+
+    <!-- GRATUIT pour tout le monde : ta propre ville -->
+    <label class="q">📍 Ma ville <span class="opt-note">(gratuit)</span></label>
+    <select id="villeMienne"></select>
+
+    <!-- VIP à débloquer : choisir qui rencontrer (cheveux + âge) -->
+    <div id="vipLockZone">
+      <label class="q">Couleur de cheveux à rencontrer <span class="lock-badge">👑 VIP</span></label>
+      <div id="hairPrefLock" class="ville-field">
+        <span>🔒 Choisis la couleur de cheveux que tu veux rencontrer…</span>
+        <span class="chev">›</span>
+      </div>
+      <label class="q">Tranche d'âge à rencontrer <span class="lock-badge">👑 VIP</span></label>
+      <div id="ageLock" class="ville-field">
+        <span>🔒 Choisis la tranche d'âge que tu veux rencontrer…</span>
+        <span class="chev">›</span>
+      </div>
+    </div>
+
+    <!-- PAYANT : voir la ville des autres + choisir la ville à croiser -->
+    <label class="q">💞 Rencontrer des gens d'une ville précise <span class="opt-note">(premium)</span></label>
+    <div id="villeLock" class="ville-field">
+      <span>🔒 Choisir la ville des gens à croiser…</span>
+      <span class="chev">›</span>
+    </div>
+    <select id="villeCible" style="display:none"></select>
+
+    <button class="btn" id="start" disabled>💘 Commencer</button>
+    <div id="startHint" class="start-hint"></div>
+    <small class="legal">Prototype de démonstration. Ta caméra reste sur ton appareil et n'est ni enregistrée ni envoyée. Le/la partenaire affiché(e) est simulé(e).</small>
+  </div>
+
+  <!-- MESSAGERIE (liste des conversations) -->
+  <div id="inbox" class="card ov" style="display:none">
+    <h2 style="font-size:24px;margin-bottom:4px">💬 Messages</h2>
+    <p style="color:#ffb8cd;font-size:14px;margin-bottom:14px">Toutes tes conversations sont ici 💌 Une fois une discussion ouverte, écrivez-vous <b>autant que vous voulez</b>.</p>
+    <div id="threadList" class="clist"></div>
+    <button class="btn" id="inboxBack" style="margin-top:20px">← Retour</button>
+  </div>
+
+  <!-- CONVERSATION -->
+  <div id="thread" class="card ov" style="display:none">
+    <div class="live-top">
+      <button id="threadBack" class="top-btn">← Messages</button>
+      <span id="threadName" style="font-weight:800;font-size:16px;align-self:center"></span>
+      <button id="threadBlock" class="top-btn" style="background:rgba(255,80,80,.2);border-color:rgba(255,120,120,.4)">🚫 Bloquer</button>
+    </div>
+    <div class="thread-open">🔓 Conversation débloquée — écrivez-vous librement 💌</div>
+    <div class="msgs" id="threadMsgs" style="max-height:320px;min-height:200px"></div>
+    <form id="threadForm" style="display:flex;gap:8px;margin-top:10px">
+      <input id="threadInput" placeholder="Écris librement…" autocomplete="off" style="flex:1;padding:12px;border-radius:12px;border:none;outline:none;background:rgba(255,255,255,.14);color:#fff">
+      <button type="submit" style="padding:0 18px;border:none;border-radius:12px;background:var(--rose);color:#fff;font-weight:700;cursor:pointer">Envoyer</button>
+    </form>
+  </div>
+
+  <!-- MON PROFIL / COMPTE -->
+  <div id="profile" class="card ov" style="display:none">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+      <button id="profileBackTop" class="top-btn">← Retour au menu</button>
+      <h2 style="font-size:22px;margin:0">👤 Mon profil</h2>
+    </div>
+
+    <div class="prof-head">
+      <div class="prof-photo" id="profPhotoWrap"><img id="profPhoto" alt=""><span id="profPhotoInit">🙂</span></div>
+      <div>
+        <button class="mini-buy" id="changePhotoBtn">📷 Changer la photo</button>
+        <input type="file" id="profPhotoInput" accept="image/*" style="display:none">
+      </div>
+    </div>
+
+    <label class="q">Nom d'utilisateur</label>
+    <input type="text" id="profPseudo" class="field" placeholder="Ton pseudo">
+    <label class="q">Mon âge</label>
+    <input type="number" id="profAge" class="field" min="18" max="99" inputmode="numeric" placeholder="Ton âge">
+    <button class="btn" id="saveProfile" style="margin-top:12px">💾 Enregistrer</button>
+
+    <h3 style="font-size:15px;color:#ffb8cd;margin:20px auto 8px">⚙️ Réglages du compte</h3>
+    <div class="set-list">
+      <button class="set-line" id="set-theme"><span>🌗 Thème : <b id="themeLabel">Sombre</b></span><span class="chev">Changer</span></button>
+      <button class="set-line" id="set-pass"><span>🔒 Changer mon mot de passe</span><span class="chev">›</span></button>
+      <button class="set-line" id="set-blocked"><span>🚫 Personnes bloquées <b id="blockedCount">(0)</b></span><span class="chev">›</span></button>
+      <button class="set-line" id="set-help"><span>❓ Comment ça marche</span><span class="chev">›</span></button>
+      <button class="set-line" id="set-support"><span>✉️ Contacter le support</span><span class="chev">›</span></button>
+      <button class="set-line danger" id="set-logout"><span>↩️ Se déconnecter</span><span class="chev">›</span></button>
+    </div>
+
+    <h3 style="font-size:15px;color:#ffd28f;margin:20px auto 8px">💎 Fonctionnalités premium</h3>
+    <div class="set-list">
+      <button class="set-line" id="set-vip"><span>👑 Passer VIP</span><span class="chev">›</span></button>
+      <button class="set-line" id="set-boost"><span>🚀 Me mettre en avant (Boost)</span><span class="chev">›</span></button>
+      <button class="set-line" id="set-jetons"><span>🎟️ Recharger des jetons</span><span class="chev">›</span></button>
+      <button class="set-line" id="set-ville"><span>📍 Débloquer la ville</span><span class="chev">›</span></button>
+    </div>
+
+    <!-- sous-panneau : mot de passe -->
+    <div id="panPass" class="sub-pan" style="display:none">
+      <div class="sub-head"><button class="top-btn sub-back">← Retour</button><h3>🔒 Mot de passe</h3></div>
+      <label class="q">Nouveau mot de passe</label>
+      <input type="password" id="newPass" class="field" placeholder="••••••••">
+      <button class="btn" id="savePass" style="margin-top:10px">Enregistrer</button>
+      <p class="sub-note" id="passNote"></p>
+    </div>
+
+    <!-- sous-panneau : comment ça marche -->
+    <div id="panHelp" class="sub-pan" style="display:none">
+      <div class="sub-head"><button class="top-btn sub-back">← Retour</button><h3>❓ Comment ça marche</h3></div>
+      <div class="steps">
+        <div class="step"><span class="n">1</span><span class="t"><b>Live vidéo</b> avec une personne, <b>90 s</b> pour discuter.</span></div>
+        <div class="step"><span class="n">2</span><span class="t"><b>⏭️ Passer</b> si ça n'accroche pas.</span></div>
+        <div class="step"><span class="n">3</span><span class="t"><b>❤️ Coup de cœur</b> → réciproque = <b>match 💖</b></span></div>
+        <div class="step"><span class="n">4</span><span class="t">Après un match, si vous êtes d'accord : <b>+3 min</b>.</span></div>
+        <div class="step"><span class="n">5</span><span class="t"><b>🎟️ Jetons</b> : revenir sur quelqu'un, fleurs, changer d'avis.</span></div>
+        <div class="step"><span class="n">6</span><span class="t"><b>🚀 Boost</b> : tu passes avant tout le monde.</span></div>
+        <div class="step"><span class="n">7</span><span class="t"><b>👑 VIP</b> : filtres cheveux/âge/ville, boost auto, messages illimités.</span></div>
+      </div>
+    </div>
+
+    <!-- sous-panneau : personnes bloquées -->
+    <div id="panBlocked" class="sub-pan" style="display:none">
+      <div class="sub-head"><button class="top-btn sub-back">← Retour</button><h3>🚫 Personnes bloquées</h3></div>
+      <p style="color:#ffb8cd;font-size:13px;margin-bottom:12px">Appuie sur « Débloquer » pour retrouver la personne et ses messages.</p>
+      <div id="blockedList" class="clist"></div>
+    </div>
+
+    <!-- sous-panneau : support -->
+    <div id="panSupport" class="sub-pan" style="display:none">
+      <div class="sub-head"><button class="top-btn sub-back">← Retour</button><h3>✉️ Contacter le support</h3></div>
+      <label class="q">Ton message au support</label>
+      <textarea id="supportMsg" class="field" rows="3" placeholder="Explique ton problème…" style="resize:none"></textarea>
+      <button class="btn" id="sendSupport" style="margin-top:10px">Envoyer</button>
+      <p class="sub-note" id="supportNote"></p>
+    </div>
+
+    <button class="btn" id="profileBack" style="margin-top:20px;background:rgba(255,255,255,.12);box-shadow:none">← Retour</button>
+  </div>
+
+  <!-- MES RENCONTRES -->
+  <div id="contacts" class="card ov" style="display:none">
+    <h2 style="font-size:24px;margin-bottom:4px">💌 Mes rencontres</h2>
+    <p style="color:#ffb8cd;font-size:14px;margin-bottom:14px">Retrouve tout le monde et écris-leur.</p>
+    <h3 style="font-size:16px;color:#7dff9b;margin:10px 0 8px">💖 Vos matchs mutuels</h3>
+    <div id="matchList" class="clist"></div>
+    <h3 style="font-size:16px;color:#ffb8cd;margin:18px 0 8px">💔 Ils t'avaient liké — tu les as passés</h3>
+    <div id="missedList" class="clist"></div>
+    <button class="btn" id="contactsBack" style="margin-top:20px">← Retour</button>
   </div>
 
   <!-- LIVE -->
-  <div id="live" class="hidden">
-    <div class="stage">
-      <div class="vid"><video id="localV" autoplay playsinline muted></video><span class="tag">Toi</span></div>
-      <div class="vid"><video id="remoteV" autoplay playsinline></video><span class="tag" id="remoteTag">…</span></div>
+  <div id="live">
+    <div class="card">
+      <div class="live-top">
+        <button id="quitLive" class="top-btn">⏹ Quitter</button>
+      </div>
+      <div class="stage">
+        <div class="vid-wrap">
+          <div class="vid">
+            <video id="me" autoplay playsinline muted></video>
+            <span class="tag">Toi</span>
+          </div>
+          <svg id="boostRing" viewBox="0 0 100 133" preserveAspectRatio="none">
+            <defs><linearGradient id="boostGrad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#ff5c8a"/><stop offset="0.5" stop-color="#ff9a3d"/><stop offset="1" stop-color="#ffd28f"/>
+            </linearGradient></defs>
+            <rect id="boostRect" x="1" y="1" width="98" height="131" rx="7" pathLength="100"
+                  fill="none" stroke="url(#boostGrad)" stroke-width="2.4" stroke-linecap="round"
+                  vector-effect="non-scaling-stroke"/>
+          </svg>
+          <div id="boostTab">🚀 Boost · <span id="boostFrameTime">5:00</span></div>
+        </div>
+        <div class="vid">
+          <video id="partnerVid" autoplay playsinline></video>
+          <img id="partnerImg" alt="partenaire" style="display:none">
+          <span class="timer" id="timer">01:30</span>
+          <span class="flag" id="partnerFlag">🌍</span>
+          <span class="tag" id="partnerTag">…</span>
+        </div>
+      </div>
+
+      <div class="gauge" id="gaugeWrap">
+        <div class="gauge-track">
+          <div class="gauge-fill" id="gaugeFill"></div>
+          <span class="gauge-heart" id="gaugeHeart">❤️</span>
+          <span class="boost-txt" id="boostTxt">+30s ❤️</span>
+        </div>
+        <span class="gauge-lbl" id="gaugeLbl">01:30</span>
+      </div>
+
+      <div class="controls">
+        <div class="ctrl"><button class="cbtn next" id="backBtn" title="Revenir">↩️</button><span class="clabel">Revenir</span></div>
+        <div class="ctrl"><button class="cbtn next" id="nextBtn" title="Passer">⏭️</button><span class="clabel">Passer</span></div>
+        <div class="ctrl"><button class="cbtn like" id="likeBtn" title="Coup de cœur">❤️</button><span class="clabel">Coup de cœur</span></div>
+        <div class="ctrl"><button class="cbtn next" id="muteBtn" title="Micro">🎤</button><span class="clabel">Micro</span></div>
+        <div class="ctrl"><button class="cbtn flower" id="flowerBtn" title="Fleur">🌹</button><span class="clabel">Fleur</span></div>
+        <div class="ctrl"><button class="cbtn next" id="reportBtn" title="Signaler">🚫</button><span class="clabel">Signaler</span></div>
+      </div>
+
+      <!-- Choix de la fleur -->
+      <div id="flowerPicker" class="flower-picker">
+        <div class="fp-title">🌹 Offrir une fleur à <span id="fpName">la personne</span></div>
+        <div class="fp-sub">Chaque fleur fait gagner du temps au chrono ⏱️ — plus la fleur est belle, plus tu gagnes !</div>
+        <div class="fp-opts">
+          <button class="fp-opt" data-cost="1" data-time="10" data-q="un peu" data-emo="🤍" data-lbl="Blanche">
+            <span class="fp-emo" style="font-size:34px">🤍</span>
+            <span class="fp-lbl">Blanche</span>
+            <span class="fp-cost">🎟️ 1</span>
+            <span class="fp-time">⏱️ +10 s</span>
+          </button>
+          <button class="fp-opt" data-cost="3" data-time="35" data-q="plus" data-emo="🌸" data-lbl="Turquoise">
+            <span class="fp-emo" style="font-size:46px;filter:hue-rotate(140deg)">🌸</span>
+            <span class="fp-lbl">Turquoise</span>
+            <span class="fp-cost">🎟️ 3</span>
+            <span class="fp-time">⏱️ +35 s</span>
+          </button>
+          <button class="fp-opt" data-cost="5" data-time="60" data-q="beaucoup" data-emo="🌹" data-lbl="Rose brillante">
+            <span class="fp-emo" style="font-size:58px">🌹</span>
+            <span class="fp-lbl">Rose brillante</span>
+            <span class="fp-cost">🎟️ 5</span>
+            <span class="fp-time">⏱️ +60 s</span>
+          </button>
+        </div>
+        <button id="flowerClose" class="fp-close">Fermer</button>
+      </div>
+      <div class="token-bar">🎟️ Jetons : <b id="tokenCount">0</b> <button id="buyTokens" class="mini-buy">+ Recharger</button> <button id="boostBtn" class="mini-buy">🚀 Me mettre en avant</button></div>
+      <p class="info" id="liveInfo">Fais connaissance… puis appuie sur ❤️ pour lui envoyer un coup de cœur.</p>
+
+      <div class="chat">
+        <div class="msgs" id="msgs"></div>
+        <form id="chatForm">
+          <input id="chatInput" placeholder="Écris un message…" autocomplete="off">
+          <button type="submit">Envoyer</button>
+        </form>
+      </div>
     </div>
-    <div style="text-align:center"><span class="status" id="liveStatus">Recherche…</span></div>
-    <div id="waiting" style="text-align:center"><div class="spin"></div><p style="color:#ffb8cd">On te cherche quelqu'un… (personnes en attente : <b id="qcount">0</b>)</p></div>
-    <div class="controls">
-      <button class="cbtn next" id="nextBtn">⏭️ Suivant</button>
-      <button class="cbtn stop" id="stopBtn">⏹ Quitter</button>
-    </div>
-    <p class="info" id="liveInfo"></p>
   </div>
 </div>
 
+<!-- Mise en garde : quitter le live -->
+<div id="quitConfirm" style="display:none;position:fixed;inset:0;z-index:70;background:rgba(0,0,0,.72);align-items:center;justify-content:center;padding:20px">
+  <div style="max-width:340px;width:100%;background:linear-gradient(160deg,#2a0512,#160409);border:1px solid rgba(255,255,255,.14);border-radius:18px;box-shadow:0 14px 44px rgba(0,0,0,.65);padding:22px;text-align:center">
+    <div style="font-size:38px;margin-bottom:6px">⚠️</div>
+    <h3 style="margin:0 0 8px;font-size:19px">Quitter le live ?</h3>
+    <p style="color:#ffd0dc;font-size:13.5px;line-height:1.4;margin:0 0 18px">
+      En quittant, tu mets fin à ce live et tu ne passeras pas aux prochaines personnes. Tu reviendras à l'accueil.
+    </p>
+    <div style="display:flex;gap:10px">
+      <button id="quitNo" class="btn cancel" style="flex:1">Non, rester</button>
+      <button id="quitYes" class="btn pay" style="flex:1">Oui, quitter</button>
+    </div>
+  </div>
+</div>
+
+<!-- PAYWALL -->
+<div id="paywall">
+  <div class="paywall-card">
+    <h3>🔓 Voir & choisir la ville</h3>
+    <div class="price">1,99 € <span class="old-price">2,99 €</span></div>
+    <p style="color:#ffe6c2;font-size:14px;margin-bottom:10px">Ta ville est déjà gratuite. Ici tu débloques le fait de <b>voir la ville des autres</b> et de <b>choisir dans quelle ville croiser les gens</b>.</p>
+    <ul>
+      <li>👀 Vois la ville des gens que tu croises</li>
+      <li>💞 Choisis la ville des gens à rencontrer</li>
+      <li>❤️ Des rencontres là où tu veux</li>
+    </ul>
+    <button class="btn pay" id="payBtn">💳 Payer 1,99 €</button>
+    <button class="btn cancel" id="payCancel">Plus tard</button>
+    <div class="pack-upsell" id="goPack">👑 Ou prends le <b>Pack VIP à 7,99 €</b> — tout inclus ›</div>
+    <small class="legal">Paiement simulé pour la démo. Aucun montant n'est réellement débité.</small>
+  </div>
+</div>
+
+<!-- BOOST -->
+<div id="boostPaywall" style="display:none;position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.75);align-items:center;justify-content:center;padding:20px">
+  <div class="paywall-card">
+    <h3>🚀 Me mettre en avant</h3>
+    <div id="boostCredit" style="display:none;background:rgba(255,210,143,.16);border:1px solid rgba(255,210,143,.55);border-radius:12px;padding:12px;margin-bottom:14px;font-size:14px;color:#ffe6c2">
+      🎁 Tu as un <b>Boost 25 min offert</b> (VIP) en réserve.
+      <button class="btn pay" id="activateFreeBoost" style="margin-top:8px">🚀 Activer maintenant</button>
+    </div>
+    <p style="color:#ffe6c2;font-size:14px;margin-bottom:14px">Tu apparais <b>en priorité</b> dans les lives des autres → beaucoup plus de rencontres, plus vite.</p>
+    <div class="boost-opts">
+      <button class="boost-opt" data-min="5" data-price="1,99">
+        <span class="bo-dur">5 minutes</span>
+        <span class="bo-price">1,99 €</span>
+      </button>
+      <button class="boost-opt best" data-min="25" data-price="3,99">
+        <span class="bo-badge">-60% 🎉</span>
+        <span class="bo-dur">25 minutes</span>
+        <span class="bo-price">3,99 €</span>
+        <span class="bo-note">au lieu de 9,95 €</span>
+      </button>
+    </div>
+    <button class="btn cancel" id="boostCancel">Plus tard</button>
+    <small class="legal">Paiement simulé pour la démo. Aucun montant n'est réellement débité.</small>
+  </div>
+</div>
+
+<!-- PACK VIP -->
+<div id="packPaywall" style="display:none;position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.75);align-items:center;justify-content:center;padding:20px">
+  <div class="paywall-card" style="border-color:rgba(255,210,143,.7)">
+    <h3>👑 Pack VIP</h3>
+    <div class="price">7,99 € <span class="old-price">13,96 €</span></div>
+    <div style="display:inline-block;background:#e60043;color:#fff;font-weight:800;font-size:14px;padding:4px 12px;border-radius:20px;margin-bottom:10px">Tu économises 43 % 🎉</div>
+    <p style="color:#ffe6c2;font-size:13px;margin-bottom:12px">Acheté séparément : Ma Ville (1,99 €) + 20 jetons (7,98 €) + Boost 25 min (3,99 €) = <b>13,96 €</b>. Avec le VIP : <b>7,99 €</b> + filtres cheveux/âge + messages illimités offerts.</p>
+    <ul>
+      <li>📍 <b>Mode Ma Ville</b> inclus (choisis la ville à croiser)</li>
+      <li>🎨 <b>Filtre cheveux</b> — choisis la couleur de cheveux que tu veux rencontrer</li>
+      <li>🎂 <b>Filtre âge</b> — choisis la tranche d'âge que tu veux rencontrer (18-30 ou 30+)</li>
+      <li>🎟️ <b>20 jetons</b> offerts (revenir + fleurs)</li>
+      <li>🚀 <b>Boost 25 min</b> offert, <b>rechargé automatiquement tous les 2 jours</b> 🎁</li>
+      <li>💬 <b>Messages illimités</b> — écris à qui tu veux sans payer</li>
+      <li>❤️ Le pack le plus économique</li>
+    </ul>
+    <button class="btn pay" id="payPackBtn">💳 Payer 7,99 € · Pack VIP</button>
+    <button class="btn cancel" id="payPackCancel">Plus tard</button>
+    <small class="legal">Paiement simulé pour la démo. Aucun montant n'est réellement débité.</small>
+  </div>
+</div>
+
+<!-- STATUT VIP (une fois acheté) -->
+<div id="vipStatus" style="display:none;position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.75);align-items:center;justify-content:center;padding:20px">
+  <div class="paywall-card" style="border-color:rgba(255,210,143,.7)">
+    <h3>👑 Ton VIP est actif</h3>
+    <p style="color:#ffe6c2;font-size:13px;margin-bottom:12px">Voici tout ce que tu as débloqué :</p>
+    <ul class="vip-owned">
+      <li>Mode Ma Ville (choisir la ville à croiser)</li>
+      <li>Filtre couleur de cheveux à rencontrer</li>
+      <li>Filtre tranche d'âge (18-30 / 30+)</li>
+      <li>20 jetons offerts</li>
+      <li>Boost 25 min, rechargé automatiquement tous les 2 jours 🎁</li>
+      <li>Messages illimités</li>
+    </ul>
+    <button class="btn cancel" id="vipStatusClose">Fermer</button>
+  </div>
+</div>
+
+<!-- ACHAT DE JETONS -->
+<div id="tokenPaywall" style="display:none;position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.7);align-items:center;justify-content:center;padding:20px">
+  <div class="paywall-card">
+    <h3>🎟️ Recharger des jetons</h3>
+    <p style="color:#ffe6c2;font-size:13px;margin-bottom:14px">Pour revenir sur une personne ↩️, offrir des fleurs 🌹 ou changer d'avis 💞.</p>
+    <div class="boost-opts">
+      <button class="boost-opt token-opt" data-tokens="5">
+        <span class="bo-dur">5 jetons</span>
+        <span class="bo-price">2,99 €</span>
+      </button>
+      <button class="boost-opt best token-opt" data-tokens="10">
+        <span class="bo-badge">-33% 🎉</span>
+        <span class="bo-dur">10 jetons</span>
+        <span class="bo-price">3,99 €</span>
+        <span class="bo-note">au lieu de 5,98 €</span>
+      </button>
+    </div>
+    <button class="btn cancel" id="buyTokenCancel">Plus tard</button>
+    <small class="legal">Paiement simulé pour la démo. Aucun montant n'est réellement débité.</small>
+  </div>
+</div>
+
+<!-- ENVOYER UN MESSAGE (payant) -->
+<div id="msgModal" style="display:none;position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.7);align-items:center;justify-content:center;padding:20px">
+  <div class="paywall-card">
+    <h3>✉️ Écrire à <span id="msgName"></span></h3>
+    <textarea id="msgText" rows="3" placeholder="Ton message…" style="width:100%;border-radius:12px;border:none;padding:12px;resize:none;font-size:15px;outline:none"></textarea>
+    <div id="msgStep2" style="display:none">
+      <div class="price">2,99 €</div>
+      <p style="color:#ffe6c2;font-size:13px;margin-bottom:10px">Pour ouvrir la conversation</p>
+    </div>
+    <button class="btn pay" id="msgSend" style="margin-top:14px">💌 Envoyer</button>
+    <button class="btn cancel" id="msgCancel">Annuler</button>
+    <small class="legal">Paiement simulé pour la démo. Aucun montant n'est réellement débité.</small>
+  </div>
+</div>
+
+<!-- CONFIRMATION UTILISER UN JETON -->
+<div id="confirmBack" style="display:none;position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.7);align-items:center;justify-content:center;padding:20px">
+  <div class="paywall-card">
+    <h3>↩️ Revenir en arrière</h3>
+    <p style="color:#ffe6c2;font-size:15px;margin:8px 0 4px">Voulez-vous utiliser <b>1 jeton</b> afin de retomber sur <b id="backName">la personne précédente</b> ?</p>
+    <p style="color:#ffd28f;font-size:13px;margin:8px 0">Si la personne est déjà en live, tu seras mis en attente. <b>Ton jeton n'est débité que si tu retrouves la personne</b> — sinon il t'est rendu.</p>
+    <p class="badge" id="backTokensLeft"></p>
+    <button class="btn pay" id="confirmBackYes" style="margin-top:18px">🎟️ Oui, la retrouver</button>
+    <button class="btn cancel" id="confirmBackNo">Non</button>
+  </div>
+</div>
+
+<!-- ATTENTE DE RECONNEXION -->
+<div id="waitBack" style="display:none;position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.8);align-items:center;justify-content:center;padding:20px">
+  <div class="paywall-card">
+    <div id="waitSpin" style="font-size:44px;margin-bottom:6px">⏳</div>
+    <h3 id="waitTitle">Reconnexion…</h3>
+    <p id="waitTxt" style="color:#ffe6c2;font-size:15px;margin:10px 0">En attente que la personne se libère…</p>
+    <button class="btn cancel" id="waitClose" style="display:none">OK</button>
+  </div>
+</div>
+
+<!-- MATCH -->
+<div id="match">
+  <h2>💖 MATCH !</h2>
+  <p id="matchTxt">Coup de cœur mutuel !</p>
+  <div id="matchTimer">⏳ 15s pour décider</div>
+  <p class="match-q">Si vous continuez, vous pourrez vous parler <b>3 minutes de plus</b> avec la même personne. Vous voulez continuer ?</p>
+
+  <div class="decisions">
+    <div class="drow">
+      <span class="dname" id="dPartnerName">La personne</span>
+      <span class="dstatus waiting" id="dPartnerStatus">⏳ en attente…</span>
+    </div>
+    <div class="drow">
+      <span class="dname">Toi</span>
+      <span class="dstatus" id="dMeWrap">
+        <button class="dbtn yes" id="meYes">✓ Continuer</button>
+        <button class="dbtn no" id="meNo">✖ Passer</button>
+      </span>
+    </div>
+  </div>
+
+  <p class="match-note" id="matchNote"></p>
+  <button class="btn" id="changeMindBtn" style="display:none;background:linear-gradient(90deg,#ffb347,#ffd28f);color:#1a0710">🎟️ Changer d'avis · 2 jetons</button>
+  <button class="btn" id="nextMatchBtn" style="display:none;background:rgba(255,255,255,.15);box-shadow:none">⏭️ Rencontrer quelqu'un d'autre</button>
+</div>
+
 <script>
-const PAYS = [["all","🌍 Peu importe"],["fr","🇫🇷 France"],["us","🇺🇸 États-Unis"],["ca","🇨🇦 Canada"],["be","🇧🇪 Belgique"],["ch","🇨🇭 Suisse"],["ma","🇲🇦 Maroc"],["dz","🇩🇿 Algérie"],["tn","🇹🇳 Tunisie"],["es","🇪🇸 Espagne"],["it","🇮🇹 Italie"],["de","🇩🇪 Allemagne"],["uk","🇬🇧 Royaume-Uni"]];
-const FLAGS=Object.fromEntries(PAYS.map(([k,v])=>[k,v.split(" ")[0]]));
-const state={genre:null,pref:null,origine:"fr",pays:"all"};
+/* ---------- Données ---------- */
+const PAYS = [
+  ["fr","🇫🇷 France"],["us","🇺🇸 États-Unis"],["ca","🇨🇦 Canada"],["be","🇧🇪 Belgique"],
+  ["ch","🇨🇭 Suisse"],["ma","🇲🇦 Maroc"],["dz","🇩🇿 Algérie"],["tn","🇹🇳 Tunisie"],
+  ["es","🇪🇸 Espagne"],["it","🇮🇹 Italie"],["de","🇩🇪 Allemagne"],["uk","🇬🇧 Royaume-Uni"],
+  ["br","🇧🇷 Brésil"],["mx","🇲🇽 Mexique"],["jp","🇯🇵 Japon"],["all","🌍 Peu importe"]
+];
+const FLAGS = Object.fromEntries(PAYS.map(([k,v])=>[k, v.split(" ")[0]]));
 
-// coeurs
-const hc=document.getElementById("hearts");
-for(let i=0;i<16;i++){const s=document.createElement("span");s.textContent="❤";s.style.left=Math.random()*100+"%";s.style.animationDuration=(6+Math.random()*8)+"s";s.style.animationDelay=(Math.random()*8)+"s";s.style.fontSize=(14+Math.random()*18)+"px";hc.appendChild(s);}
-
-// selects
-const selO=document.getElementById("origine"),selP=document.getElementById("pays");
-PAYS.forEach(([k,v])=>{if(k!=="all")selO.appendChild(new Option(v,k));selP.appendChild(new Option(v,k));});
-selO.value="fr";selP.value="all";
-selO.onchange=e=>state.origine=e.target.value;
-selP.onchange=e=>state.pays=e.target.value;
-
-function group(id,key){document.querySelectorAll("#"+id+" .opt").forEach(o=>o.onclick=()=>{document.querySelectorAll("#"+id+" .opt").forEach(x=>x.classList.remove("sel"));o.classList.add("sel");state[key]=o.dataset.v;check();});}
-group("genre","genre");group("pref","pref");
-function check(){document.getElementById("start").disabled=!(state.genre&&state.pref);document.getElementById("setupHint").textContent=(state.genre&&state.pref)?"":"Indique qui tu es et qui tu veux rencontrer.";}
-check();
-
-let ws, pc, localStream, matched=false;
-const remoteV=document.getElementById("remoteV"), localV=document.getElementById("localV");
-const ICE={iceServers:[{urls:"stun:stun.l.google.com:19302"},{urls:"stun:stun1.l.google.com:19302"}]};
-
-document.getElementById("start").onclick=async()=>{
-  try{ localStream=await navigator.mediaDevices.getUserMedia({video:true,audio:true}); }
-  catch(e){ alert("Autorise la caméra et le micro pour continuer."); return; }
-  localV.srcObject=localStream;
-  document.getElementById("setup").classList.add("hidden");
-  document.getElementById("live").classList.remove("hidden");
-  connect();
+const VILLES = {
+  fr:["Paris","Marseille","Lyon","Toulouse","Nice","Nantes","Bordeaux","Lille","Strasbourg"],
+  us:["New York","Los Angeles","Chicago","Miami","Houston","Atlanta","Boston","Seattle"],
+  ca:["Montréal","Toronto","Vancouver","Québec","Ottawa","Calgary"],
+  be:["Bruxelles","Anvers","Liège","Gand","Charleroi"],
+  ch:["Genève","Zurich","Lausanne","Berne","Bâle"],
+  ma:["Casablanca","Rabat","Marrakech","Tanger","Fès","Agadir"],
+  dz:["Alger","Oran","Constantine","Annaba"],
+  tn:["Tunis","Sfax","Sousse","Bizerte"],
+  es:["Madrid","Barcelone","Valence","Séville","Malaga"],
+  it:["Rome","Milan","Naples","Turin","Florence"],
+  de:["Berlin","Munich","Hambourg","Cologne","Francfort"],
+  uk:["Londres","Manchester","Birmingham","Liverpool","Édimbourg"],
+  br:["São Paulo","Rio de Janeiro","Brasília","Salvador"],
+  mx:["Mexico","Guadalajara","Monterrey","Cancún"],
+  jp:["Tokyo","Osaka","Kyoto","Yokohama"]
 };
 
-function connect(){
-  const proto=location.protocol==="https:"?"wss":"ws";
-  ws=new WebSocket(proto+"://"+location.host);
-  ws.onopen=()=>ws.send(JSON.stringify({type:"join",genre:state.genre,pref:state.pref,origine:state.origine,pays:state.pays}));
-  ws.onmessage=async(ev)=>{
-    const m=JSON.parse(ev.data);
-    if(m.type==="waiting"){ showWaiting(m.count); }
-    else if(m.type==="matched"){ startCall(m); }
-    else if(m.type==="signal"){ await onSignal(m.data); }
-    else if(m.type==="peer-left"){ info("La personne est partie. On te cherche quelqu'un d'autre…"); teardownPC(); showWaiting(); }
+const PRENOMS_F = ["Léa","Emma","Sofia","Chloé","Yasmine","Camille","Julia","Nina","Inès","Manon","Sarah","Lina","Jade","Louna","Éva","Maya","Clara","Anaïs"];
+const PRENOMS_H = ["Lucas","Adam","Nathan","Théo","Karim","Hugo","Ethan","Sami","Louis","Marco","Rayan","Noah","Enzo","Gabriel","Yanis","Malo","Aaron","Ilyes"];
+const INTERETS = ["🎵 Musique","✈️ Voyages","🍕 Bonne bouffe","🎬 Cinéma","⚽ Sport","🎮 Jeux vidéo","📚 Lecture","🐶 Animaux","💃 Danse","🎨 Art","🌿 Nature","☕ Cafés","📸 Photo","🎤 Karaoké"];
+const OUVERTURES = ["Coucou 😊","Salut ! Ton sourire est trop mignon","Hey, ça va toi ?",
+  "Waw, tu me plais déjà 😍","Bonsoir, tu viens d'où exactement ?","Coucou, t'as un joli regard ✨"];
+const REPONSES = ["Haha j'adore 😄","Trop cool !","Tu me plais bien tu sais 😏",
+  "T'es mon coup de cœur 🥰","Dis m'en plus sur toi","J'aime beaucoup ta vibe ❤️","Toi aussi tu es adorable"];
+
+/* ---------- État ---------- */
+const state = {genre:null, pref:null, ageMine:null, hairMine:null, hairPref:null, agePref:null, origine:"fr", cible:"fr", villeMienne:null, villeCible:null, premium:false, tokens:3, msgUnlimited:false, freeBoost:0};
+let stream=null, timerInt=null, partner=null, iLiked=false;
+
+/* ---------- Coeurs animés ---------- */
+const hc=document.getElementById("hearts");
+for(let i=0;i<18;i++){const s=document.createElement("span");s.textContent="❤";
+  s.style.left=Math.random()*100+"%";s.style.animationDuration=(6+Math.random()*8)+"s";
+  s.style.animationDelay=(Math.random()*8)+"s";s.style.fontSize=(14+Math.random()*20)+"px";hc.appendChild(s);}
+
+/* ---------- Remplir les selects ---------- */
+const selO=document.getElementById("paysOrigine"), selC=document.getElementById("paysCible");
+PAYS.forEach(([k,v])=>{if(k!=="all")selO.appendChild(new Option(v,k));selC.appendChild(new Option(v,k));});
+const selVilleMienne=document.getElementById("villeMienne"),
+      selVilleCible=document.getElementById("villeCible"),
+      autoNote=document.getElementById("autoNote");
+
+// pays d'origine → pré-remplit automatiquement le pays cible
+selO.value="fr"; selC.value="fr";
+function syncAuto(){
+  autoNote.textContent=`(auto : ${PAYS.find(p=>p[0]===state.origine)[1]})`;
+}
+syncAuto();
+selO.onchange=e=>{
+  state.origine=e.target.value;
+  selC.value=state.origine;      // ça met automatiquement le même pays
+  state.cible=state.origine;
+  syncAuto();
+  fillMyCity(); fillTargetCity();
+};
+selC.onchange=e=>{ state.cible=e.target.value; autoNote.textContent="(modifié manuellement)"; fillMyCity(); fillTargetCity(); };
+
+// GRATUIT : ta propre ville (tout le monde en met une)
+function fillMyCity(){
+  const vs = VILLES[state.cible]||[];
+  selVilleMienne.innerHTML="";
+  vs.forEach(v=>selVilleMienne.appendChild(new Option("📍 "+v,v)));
+  state.villeMienne = vs[0]||null;
+}
+selVilleMienne.onchange=e=>state.villeMienne=e.target.value||null;
+fillMyCity();
+
+// PAYANT : choisir la ville des gens à rencontrer
+function fillTargetCity(){
+  if(!state.premium) return;
+  const vs = VILLES[state.cible]||[];
+  selVilleCible.innerHTML="";
+  selVilleCible.appendChild(new Option("💞 Toutes les villes",""));
+  vs.forEach(v=>selVilleCible.appendChild(new Option("📍 "+v,v)));
+  state.villeCible = null;   // par défaut : toutes les villes
+}
+selVilleCible.onchange=e=>state.villeCible=e.target.value||null;
+
+// Mode d'emploi → onboarding
+/* ---------- Compte (démo, stocké sur l'appareil) ---------- */
+function gotoIntro(){
+  document.getElementById("account").style.display="none";
+  document.getElementById("intro").style.display="block";
+  reparseEmoji();
+}
+document.getElementById("goLogin").onclick=(e)=>{e.preventDefault();document.getElementById("signupForm").style.display="none";document.getElementById("loginForm").style.display="block";};
+document.getElementById("goSignup").onclick=(e)=>{e.preventDefault();document.getElementById("loginForm").style.display="none";document.getElementById("signupForm").style.display="block";};
+document.getElementById("acCreate").onclick=()=>{
+  const p=document.getElementById("acPseudo").value.trim();
+  const em=document.getElementById("acEmail").value.trim();
+  const pw=document.getElementById("acPass").value;
+  const warn=document.getElementById("acWarn");
+  if(!p){warn.textContent="Choisis un pseudo.";warn.style.display="block";return;}
+  if(!em.includes("@")){warn.textContent="Entre une adresse e-mail valide.";warn.style.display="block";return;}
+  if(pw.length<4){warn.textContent="Ton mot de passe doit faire au moins 4 caractères.";warn.style.display="block";return;}
+  warn.style.display="none";
+  try{ localStorage.setItem("sdl_user", JSON.stringify({pseudo:p, email:em})); }catch(e){}
+  state.pseudo=p;
+  gotoIntro();
+};
+document.getElementById("lgBtn").onclick=()=>{
+  const em=document.getElementById("lgEmail").value.trim();
+  if(!em.includes("@")){alert("Entre ton e-mail pour te connecter.");return;}
+  gotoIntro();
+};
+// si déjà inscrit sur cet appareil, on passe direct au mode d'emploi
+try{ if(localStorage.getItem("sdl_user")){ const u=JSON.parse(localStorage.getItem("sdl_user")); state.pseudo=u.pseudo; document.getElementById("account").style.display="none"; document.getElementById("intro").style.display="block"; } }catch(e){}
+
+document.getElementById("introBtn").onclick=()=>{
+  document.getElementById("intro").style.display="none";
+  document.getElementById("onboarding").style.display="block";
+  document.body.classList.add("started");   // fait apparaître les badges
+  reparseEmoji();
+};
+
+/* ---------- Profil / compte ---------- */
+state.blocked = state.blocked || [];
+function readUser(){ try{ return JSON.parse(localStorage.getItem("sdl_user")||"{}"); }catch(e){ return {}; } }
+function saveUser(patch){ const u=readUser(); Object.assign(u,patch); try{ localStorage.setItem("sdl_user",JSON.stringify(u)); }catch(e){} return u; }
+function applyPhoto(dataUrl){
+  const big=document.getElementById("profPhoto"), bigInit=document.getElementById("profPhotoInit");
+  const bImg=document.getElementById("profileBadgeImg"), bInit=document.getElementById("profileBadgeInit");
+  if(dataUrl){ big.src=dataUrl;big.style.display="block";bigInit.style.display="none"; bImg.src=dataUrl;bImg.style.display="block";bInit.style.display="none"; }
+  else { big.style.display="none";bigInit.style.display="block"; bImg.style.display="none";bInit.style.display="block"; }
+}
+function loadProfileUI(){ const u=readUser(); document.getElementById("profPseudo").value=u.pseudo||state.pseudo||""; document.getElementById("profAge").value=state.ageMine||""; applyPhoto(u.photo||null); }
+function hideSubPans(){ ["panPass","panBlocked","panSupport","panHelp"].forEach(id=>{const e=document.getElementById(id);e.style.display="none";e.classList.remove("active");}); document.getElementById("profile").classList.remove("sub-open"); }
+// Ouvre un onglet des réglages comme une PAGE dédiée (avec bouton retour)
+function openSub(id){ hideSubPans(); const el=document.getElementById(id); el.classList.add("active"); el.style.display="block"; document.getElementById("profile").classList.add("sub-open"); document.getElementById("profile").scrollTop=0; window.scrollTo(0,0); }
+function closeSub(){ hideSubPans(); }
+document.querySelectorAll(".sub-back").forEach(b=>b.onclick=closeSub);
+// charge la photo au démarrage si déjà définie
+applyPhoto(readUser().photo||null);
+
+document.getElementById("profileBadge").onclick=()=>{
+  loadProfileUI(); hideSubPans();
+  ["contacts","inbox","thread"].forEach(id=>document.getElementById(id).style.display="none");
+  document.body.classList.add("in-profile");   // masque les autres badges
+  document.getElementById("profile").style.display="block";
+  document.getElementById("profile").scrollTop=0;
+};
+function closeProfile(){hideSubPans();document.getElementById("profile").style.display="none";document.body.classList.remove("in-profile");}
+document.getElementById("profileBack").onclick=closeProfile;
+document.getElementById("profileBackTop").onclick=closeProfile;
+document.getElementById("changePhotoBtn").onclick=()=>document.getElementById("profPhotoInput").click();
+document.getElementById("profPhotoInput").onchange=(e)=>{
+  const f=e.target.files[0]; if(!f)return;
+  const r=new FileReader(); r.onload=()=>{ applyPhoto(r.result); saveUser({photo:r.result}); }; r.readAsDataURL(f);
+};
+document.getElementById("saveProfile").onclick=()=>{
+  const p=document.getElementById("profPseudo").value.trim();
+  if(p){ state.pseudo=p; saveUser({pseudo:p}); }
+  const ag=parseInt(document.getElementById("profAge").value,10);
+  if(ag>=18&&ag<=99){ state.ageMine=ag; const a=document.getElementById("ageMine"); if(a)a.value=ag; checkReady(); saveState&&saveState(); }
+  const b=document.getElementById("saveProfile"); b.textContent="✅ Enregistré"; setTimeout(()=>b.textContent="💾 Enregistrer",1400);
+};
+// Thème clair / sombre
+function applyTheme(light){
+  document.body.classList.toggle("light", light);
+  const lbl=document.getElementById("themeLabel"); if(lbl) lbl.textContent=light?"Clair":"Sombre";
+  saveUser({theme:light?"light":"dark"});
+}
+document.getElementById("set-theme").onclick=()=>applyTheme(!document.body.classList.contains("light"));
+try{ if(readUser().theme==="light"){ document.body.classList.add("light"); const l=document.getElementById("themeLabel"); if(l)l.textContent="Clair"; } }catch(e){}
+document.getElementById("set-pass").onclick=()=>openSub("panPass");
+document.getElementById("set-blocked").onclick=()=>{ renderBlocked(); openSub("panBlocked"); };
+document.getElementById("set-help").onclick=()=>openSub("panHelp");
+document.getElementById("set-support").onclick=()=>openSub("panSupport");
+document.getElementById("set-logout").onclick=()=>{ try{localStorage.removeItem("sdl_user");localStorage.removeItem("sdl_state");}catch(e){} location.reload(); };
+// Fonctionnalités payantes accessibles depuis les réglages
+document.getElementById("set-vip").onclick=()=>{
+  if(state.msgUnlimited){document.getElementById("vipStatus").style.display="flex";}
+  else{document.getElementById("packPaywall").style.display="flex";}
+};
+document.getElementById("set-boost").onclick=()=>openBoost();
+document.getElementById("set-jetons").onclick=()=>{document.getElementById("tokenPaywall").style.display="flex";};
+document.getElementById("set-ville").onclick=()=>{document.getElementById("paywall").style.display="flex";};
+document.getElementById("savePass").onclick=()=>{
+  const v=document.getElementById("newPass").value, n=document.getElementById("passNote");
+  if(v.length<4){ n.style.color="#ff7a94"; n.textContent="Au moins 4 caractères."; return; }
+  saveUser({pass:v}); n.style.color="#7dff9b"; n.textContent="Mot de passe mis à jour ✅"; document.getElementById("newPass").value="";
+};
+document.getElementById("sendSupport").onclick=()=>{
+  const v=document.getElementById("supportMsg").value.trim(), n=document.getElementById("supportNote");
+  if(!v){ n.style.color="#ff7a94"; n.textContent="Écris ton message."; return; }
+  document.getElementById("supportMsg").value=""; n.style.color="#7dff9b"; n.textContent="Message envoyé au support ✅ On te répondra par e-mail.";
+};
+
+/* ---------- Blocage / déblocage ---------- */
+function updateBlockedCount(){ document.getElementById("blockedCount").textContent=`(${state.blocked.length})`; }
+function isBlocked(pid){ return state.blocked.some(x=>x.pid===pid); }
+function blockPerson(pid){
+  const t=threads.find(x=>x.p.pid===pid);
+  const p = t? t.p : (matches.concat(missed).find(x=>x.pid===pid));
+  if(!p) return;
+  if(!state.blocked.some(x=>x.pid===pid)) state.blocked.push(p);   // on garde tout, juste masqué
+  updateInboxCount(); updateContactsCount(); updateBlockedCount();
+}
+function unblockPerson(pid){ state.blocked=state.blocked.filter(x=>x.pid!==pid); renderBlocked(); updateBlockedCount(); updateInboxCount(); updateContactsCount(); }
+function renderBlocked(){
+  const list=document.getElementById("blockedList");
+  if(!state.blocked.length){ list.innerHTML='<div style="color:#8a6672;font-size:13px;font-style:italic">Personne de bloqué.</div>'; return; }
+  list.innerHTML=state.blocked.map(p=>`<div class="crow"><img src="${avatarUrl(p)}"><div class="ci"><b>${p.nom}, ${p.age}</b></div><button class="cmsg" data-ub="${p.pid}">Débloquer</button></div>`).join("");
+  list.querySelectorAll("[data-ub]").forEach(b=>b.onclick=()=>unblockPerson(+b.dataset.ub));
+}
+document.getElementById("threadBlock").onclick=()=>{
+  if(!curThread) return;
+  const nom=curThread.p.nom, pid=curThread.p.pid;
+  blockPerson(pid);
+  document.getElementById("thread").style.display="none";
+  showInbox();
+  const info=document.getElementById("liveInfo"); if(info) info.textContent=`🚫 ${nom} a été bloqué(e).`;
+};
+// Options payantes du mode d'emploi : on clique → le prix s'affiche dans la fenêtre de paiement
+document.getElementById("pl-ville").onclick=()=>{document.getElementById("paywall").style.display="flex";};
+document.getElementById("pl-tokens").onclick=()=>{document.getElementById("tokenPaywall").style.display="flex";};
+document.getElementById("pl-flowers").onclick=()=>{document.getElementById("tokenPaywall").style.display="flex";};
+document.getElementById("pl-msg").onclick=()=>{
+  const el=document.querySelector(".paid-hint");
+  el.innerHTML="💬 <b>Messages : 2,99 €</b> pour ouvrir une discussion — ensuite c'est gratuit pour vous deux. Tu <b>écris</b> à quelqu'un depuis « 💌 Mes rencontres », et tu <b>reçois</b> les messages qu'on t'envoie dans « 💬 Messages ».";
+  el.style.color="#ffe6c2";
+};
+
+// Champ ville → ouvre le paywall (le prix n'apparaît qu'ici)
+document.getElementById("villeLock").onclick=()=>{document.getElementById("paywall").style.display="flex";};
+document.getElementById("payCancel").onclick=()=>{document.getElementById("paywall").style.display="none";};
+document.getElementById("payBtn").onclick=()=>{
+  state.premium=true;
+  document.getElementById("paywall").style.display="none";
+  document.getElementById("villeLock").style.display="none";
+  document.getElementById("villeCible").style.display="block";
+  fillTargetCity();
+};
+
+// Pack VIP (7,99 €)
+function openPack(){document.getElementById("paywall").style.display="none";document.getElementById("tokenPaywall").style.display="none";document.getElementById("packPaywall").style.display="flex";}
+document.getElementById("goPack").onclick=openPack;
+document.getElementById("pl-pack").onclick=openPack;
+document.getElementById("payPackCancel").onclick=()=>{document.getElementById("packPaywall").style.display="none";};
+document.getElementById("payPackBtn").onclick=()=>{
+  state.premium=true; state.tokens+=20; state.msgUnlimited=true;
+  if(typeof updateTokens==="function") updateTokens();
+  document.getElementById("vipBadge").classList.add("active");
+  document.getElementById("vipState").textContent="VIP ✓";
+  document.getElementById("vipPct").style.display="none";
+  unlockVipFilters();  // débloque cheveux à rencontrer + tranche d'âge
+  state.freeBoost=25;  // Boost 25 min offert — à activer quand on veut (pas tout de suite)
+  document.getElementById("boostBadge").classList.add("has-credit");
+  document.getElementById("packPaywall").style.display="none";
+  document.getElementById("villeLock").style.display="none";
+  document.getElementById("villeCible").style.display="block";
+  fillTargetCity();
+};
+
+/* ---------- Sélecteurs d'options ---------- */
+function group(id,key){
+  document.querySelectorAll(`#${id} .opt`).forEach(o=>o.onclick=()=>{
+    document.querySelectorAll(`#${id} .opt`).forEach(x=>x.classList.remove("sel"));
+    o.classList.add("sel");state[key]=o.dataset.v;checkReady();
+  });
+}
+group("genre","genre");group("pref","pref");group("hair","hairMine");group("hairPref","hairPref");group("agePref","agePref");
+// Mon âge (gratuit, 18+ obligatoire)
+const ageInput=document.getElementById("ageMine");
+ageInput.oninput=()=>{
+  const v=parseInt(ageInput.value,10);
+  state.ageMine = (v>=18 && v<=99) ? v : null;
+  document.getElementById("ageWarn").style.display = (ageInput.value && (!v||v<18)) ? "block" : "none";
+  checkReady();
+};
+function checkReady(){
+  const manque=[];
+  if(!state.genre) manque.push("indiquer si tu es un homme ou une femme");
+  if(!state.ageMine) manque.push("mettre ton âge (18 ans minimum)");
+  if(!state.pref) manque.push("choisir qui tu veux rencontrer");
+  const ok = manque.length===0;
+  document.getElementById("start").disabled=!ok;
+  document.getElementById("startHint").textContent = ok ? "" : "pour commencer, il te reste à : "+manque.join(", ")+".";
+}
+
+// Libellés cheveux accordés au genre (Blonde/Rousse… pour femme, Blond/Roux… pour homme)
+const HAIR_LABELS={
+  homme:{blond:"Blond",roux:"Roux",chatain:"Châtain",blanc:"Blanc"},
+  femme:{blond:"Blonde",roux:"Rousse",chatain:"Châtaine",blanc:"Blanche"}
+};
+function setHairLabels(containerId, gender){
+  const map=HAIR_LABELS[gender]||HAIR_LABELS.homme;
+  document.querySelectorAll(`#${containerId} .opt`).forEach(o=>{
+    const v=o.dataset.v; if(!map[v])return;
+    o.childNodes[o.childNodes.length-1].textContent=map[v];
+  });
+}
+// « Mes cheveux » suit « Je suis »
+document.querySelectorAll("#genre .opt").forEach(o=>o.addEventListener("click",()=>setHairLabels("hair", state.genre)));
+// « Cheveux à rencontrer » suit « Je veux rencontrer »
+document.querySelectorAll("#pref .opt").forEach(o=>o.addEventListener("click",()=>setHairLabels("hairPref", state.pref==="femme"?"femme":"homme")));
+checkReady();   // affiche dès le départ ce qu'il reste à remplir
+
+// Filtres réservés au VIP : cheveux à rencontrer + tranche d'âge
+function openVipForFilter(){
+  if(state.msgUnlimited){ return true; }   // déjà VIP
+  document.getElementById("packPaywall").style.display="flex";
+  return false;
+}
+document.getElementById("hairPrefLock").onclick=openVipForFilter;
+document.getElementById("ageLock").onclick=openVipForFilter;
+function unlockVipFilters(){
+  document.getElementById("vipLockZone").style.display="none";          // masque les cases verrouillées
+  document.getElementById("hairPrefLabel").style.display="block";        // révèle les sélecteurs en haut
+  document.getElementById("hairPref").style.display="flex";
+  document.getElementById("agePrefLabel").style.display="block";
+  document.getElementById("agePref").style.display="flex";
+}
+
+/* ---------- Démarrer le live ---------- */
+document.getElementById("start").onclick=async()=>{
+  document.getElementById("onboarding").style.display="none";
+  document.getElementById("live").style.display="block";
+  try{
+    try{ stream=await navigator.mediaDevices.getUserMedia({video:true,audio:true}); }
+    catch(e){ stream=await navigator.mediaDevices.getUserMedia({video:true,audio:false}); }
+    document.getElementById("me").srcObject=stream;
+  }catch(e){
+    document.getElementById("me").parentElement.innerHTML=
+      '<div style="display:flex;align-items:center;justify-content:center;height:100%;text-align:center;padding:14px;color:#ffb8cd">📷 Caméra non disponible.<br>Autorise l\'accès pour te voir en live.</div><span class="tag">Toi</span>';
+  }
+  nextPartner();
+};
+
+/* ---------- Générer un partenaire ---------- */
+function partnerGender(){
+  if(state.pref==="tous") return Math.random()<.5?"femme":"homme";
+  return state.pref;
+}
+let history=[];   // personnes déjà croisées (pour revenir avec un jeton)
+
+// Affiche un partenaire (nouveau OU retrouvé)
+function displayPartner(p){
+  partner=p; iLiked=false;
+  document.getElementById("likeBtn").style.background="linear-gradient(135deg,var(--rouge),var(--rose))";
+  document.getElementById("msgs").innerHTML="";
+  const seed=p.nom+p.age+p.pays;
+  document.getElementById("partnerImg").src=
+    `https://api.dicebear.com/7.x/${p.g==="femme"?"lorelei":"micah"}/svg?seed=${encodeURIComponent(seed)}&backgroundColor=ffd5dc,ffdfbf,d1f4d0`;
+  // la ville n'est visible qu'avec le Premium ; sinon elle est masquée 🔒
+  let villeAff = !p.ville ? "" : (state.premium ? ` · 📍${p.ville}` : " · 📍🔒");
+  const HAIR_EMO={blond:"🟡",roux:"🟠",chatain:"🟤",blanc:"⚪"};
+  let hairAff = p.hair ? ` · ${HAIR_EMO[p.hair]}` : "";
+  document.getElementById("partnerTag").textContent=`${p.nom}, ${p.age}${hairAff}${villeAff}`;
+  document.getElementById("partnerFlag").textContent=FLAGS[p.pays]||"🌍";
+  reparseEmoji();
+  startTimer(90);
+  setTimeout(()=>{if(partner===p)addMsg("them",OUVERTURES[Math.floor(Math.random()*OUVERTURES.length)]);},1500);
+  window._partnerLike = Math.random()<.6;
+  if(window._partnerLike) setTimeout(()=>{if(partner===p) hint();}, 8000+Math.random()*8000);
+}
+
+let pidCounter=0, lastNom=null;
+// mélange et tire n éléments
+function pick(arr,n){const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a.slice(0,n);}
+function nextPartner(){
+  // la personne qu'on quitte t'avait liké mais tu n'as pas répondu → « ils t'avaient liké »
+  if(partner && window._partnerLike && !iLiked) addMissed(partner);
+  if(partner) history.push(partner);   // on garde la personne quittée
+  if(!state.myInterets) state.myInterets = pick(INTERETS,4);   // tes intérêts (matchmaking)
+  const g=partnerGender();
+  const noms=g==="femme"?PRENOMS_F:PRENOMS_H;
+  let nom=noms[Math.floor(Math.random()*noms.length)];
+  let guard=0; while(nom===lastNom && guard++<5) nom=noms[Math.floor(Math.random()*noms.length)];
+  lastNom=nom;
+  // âge : filtre VIP (18-30 ou 30+) sinon aléatoire
+  let age;
+  if(state.msgUnlimited && state.agePref==="18-30") age=18+Math.floor(Math.random()*13);
+  else if(state.msgUnlimited && state.agePref==="30+") age=30+Math.floor(Math.random()*20);
+  else age=20+Math.floor(Math.random()*15);
+  let pays=state.cible;
+  if(pays==="all"){const p=PAYS.filter(x=>x[0]!=="all");pays=p[Math.floor(Math.random()*p.length)][0];}
+  let ville=null;
+  if(state.premium && state.villeCible) ville=state.villeCible;   // la ville que tu veux rencontrer
+  else {const vs=VILLES[pays]; if(vs) ville=vs[Math.floor(Math.random()*vs.length)];}
+  // cheveux : filtre VIP sinon aléatoire
+  const HAIRS=["blond","roux","chatain","blanc"];
+  let hair;
+  if(state.msgUnlimited && state.hairPref) hair=state.hairPref;
+  else hair=HAIRS[Math.floor(Math.random()*HAIRS.length)];
+
+  // --- Matchmaking : intérêts + score de compatibilité ---
+  // on garantit 1 à 3 intérêts communs avec toi, + d'autres
+  const communs = pick(state.myInterets, 1+Math.floor(Math.random()*3));
+  const autres = pick(INTERETS.filter(i=>!communs.includes(i)), 2);
+  const interets = pick([...communs, ...autres], 3+Math.floor(Math.random()*2));
+  // score : base + bonus si la personne colle à tes filtres + intérêts communs
+  let compat = 55 + Math.floor(Math.random()*15);
+  if(state.premium && state.villeCible) compat += 10;
+  if(state.msgUnlimited && state.hairPref) compat += 8;
+  if(state.msgUnlimited && state.agePref) compat += 7;
+  compat += communs.length*4;
+  compat = Math.min(99, compat);
+
+  displayPartner({nom,age,pays,g,ville,hair,interets,communs,compat,pid:++pidCounter,sent:false});
+}
+
+/* ---------- Mes rencontres : matchs + ratés + messages ---------- */
+let matches=[], missed=[];
+function addMatch(p){
+  missed=missed.filter(x=>x.pid!==p.pid);           // s'il était dans les ratés, on le retire
+  if(!matches.some(x=>x.pid===p.pid)) matches.push(p);
+  updateContactsCount();
+  // parfois, la personne paie pour t'écrire → un message arrive dans ta messagerie
+  if(Math.random()<0.55) setTimeout(()=>maybeIncomingMessage(p), 3000+Math.random()*6000);
+}
+function addMissed(p){
+  if(matches.some(x=>x.pid===p.pid)) return;
+  if(!missed.some(x=>x.pid===p.pid)) missed.push(p);
+  updateContactsCount();
+}
+function updateContactsCount(){
+  const n=matches.filter(m=>!isBlocked(m.pid)).length+missed.filter(m=>!isBlocked(m.pid)).length;
+  document.getElementById("contactsCount").textContent=n;
+}
+function avatarUrl(p){return `https://api.dicebear.com/7.x/${p.g==="femme"?"lorelei":"micah"}/svg?seed=${encodeURIComponent(p.nom+p.age+p.pays)}&backgroundColor=ffd5dc,ffdfbf,d1f4d0`;}
+function rowHTML(p){
+  const villeAff = p.ville && state.premium ? ` · 📍${p.ville}` : "";
+  const btn = p.sent
+    ? '<button class="cmsg sent" disabled>✅ Envoyé</button>'
+    : `<button class="cmsg" data-pid="${p.pid}">✉️ Écrire</button>`;
+  return `<div class="crow"><img src="${avatarUrl(p)}"><div class="ci"><b>${p.nom}, ${p.age}</b><small>${FLAGS[p.pays]||"🌍"}${villeAff}</small></div>${btn}</div>`;
+}
+function renderContacts(){
+  const m2=matches.filter(m=>!isBlocked(m.pid)), mi2=missed.filter(m=>!isBlocked(m.pid));
+  document.getElementById("matchList").innerHTML = m2.length?m2.map(rowHTML).join(""):'<div style="color:#8a6672;font-size:13px;font-style:italic">Aucun match pour le moment.</div>';
+  document.getElementById("missedList").innerHTML = mi2.length?mi2.map(rowHTML).join(""):'<div style="color:#8a6672;font-size:13px;font-style:italic">Personne pour le moment.</div>';
+  document.querySelectorAll(".cmsg:not(.sent)").forEach(b=>{
+    b.onclick=()=>openMsg(+b.dataset.pid);
+  });
+}
+
+// Overlay : s'ouvre PAR-DESSUS (le live continue derrière, chrono compris)
+function showContacts(){
+  renderContacts();
+  document.getElementById("contacts").style.display="block";
+  document.getElementById("contacts").scrollTop=0;
+}
+document.getElementById("contactsBadge").onclick=showContacts;
+document.getElementById("contactsBack").onclick=()=>{document.getElementById("contacts").style.display="none";};
+
+// Quitter le live → retour au menu
+document.getElementById("quitLive").onclick=()=>{
+  document.getElementById("quitConfirm").style.display="flex";
+};
+document.getElementById("quitNo").onclick=()=>{
+  document.getElementById("quitConfirm").style.display="none";
+};
+document.getElementById("quitYes").onclick=()=>{
+  document.getElementById("quitConfirm").style.display="none";
+  clearInterval(timerInt);
+  document.getElementById("live").style.display="none";
+  document.getElementById("onboarding").style.display="block";
+  window.scrollTo(0,0);
+};
+
+/* ---------- Messagerie : ouvrir une conversation coûte des jetons, ensuite gratuit ---------- */
+const MSG_COST=2;   // jetons pour ouvrir une conversation
+let threads=[];   // {p, msgs:[{who,text}], unread}
+function getThread(p){ return threads.find(t=>t.p.pid===p.pid); }
+function updateInboxCount(){
+  const vis=threads.filter(t=>!isBlocked(t.p.pid));
+  const n=vis.filter(t=>t.unread).length;
+  const lbl=n>0?n:vis.length;
+  document.getElementById("inboxCount").textContent=lbl;
+}
+// Une personne matchée peut PAYER pour t'écrire → apparaît dans ta messagerie (toi tu réponds gratuitement)
+function maybeIncomingMessage(p){
+  if(getThread(p)) return;
+  if(state.blocked.some(x=>x.pid===p.pid)) return;   // une personne bloquée ne peut pas t'écrire
+  const hello=["Coucou, j'ai adoré notre live 🥰 j'avais envie de continuer à te parler…",
+    "Salut ! Je me suis permis(e) de t'écrire, tu m'as tapé dans l'œil 😍",
+    "Hey, on a matché et je voulais pas te perdre 💌 ça va toi ?"];
+  threads.unshift({p, unread:true, msgs:[
+    {who:"sys",text:"💌 Cette personne a ouvert la conversation"},
+    {who:"them",text:hello[Math.floor(Math.random()*hello.length)]}
+  ]});
+  updateInboxCount();
+}
+
+// Envoyer un message (2,99 € pour ouvrir — sauf si déjà ouverte ou VIP)
+let msgTarget=null, msgPaying=false;
+function openMsg(pid){
+  msgTarget = matches.concat(missed).find(x=>x.pid===pid);
+  if(!msgTarget)return;
+  // conversation déjà ouverte → on écrit gratuitement
+  if(getThread(msgTarget)){ openThread(msgTarget.pid); return; }
+  msgPaying=false;
+  document.getElementById("msgName").textContent=msgTarget.nom;
+  document.getElementById("msgText").value="";
+  document.getElementById("msgStep2").style.display="none";
+  document.getElementById("msgSend").textContent="💌 Envoyer";
+  document.getElementById("msgModal").style.display="flex";
+}
+document.getElementById("msgCancel").onclick=()=>{document.getElementById("msgModal").style.display="none";};
+document.getElementById("msgSend").onclick=()=>{
+  const txt=document.getElementById("msgText").value.trim();
+  if(!txt){document.getElementById("msgText").focus();return;}
+  // Pack VIP → messages illimités, aucun paiement
+  if(!msgPaying && !state.msgUnlimited){
+    msgPaying=true;
+    document.getElementById("msgStep2").style.display="block";
+    document.getElementById("msgSend").textContent="💳 Payer 2,99 € et ouvrir";
+    return;
+  }
+  // la conversation s'ouvre pour de bon
+  msgTarget.sent=true;
+  threads.unshift({p:msgTarget, unread:false, msgs:[
+    {who:"sys",text:"💌 Tu as ouvert la conversation"},
+    {who:"me",text:txt}
+  ]});
+  updateInboxCount(); renderContacts();
+  document.getElementById("msgModal").style.display="none";
+  // la personne répond (gratuitement des deux côtés maintenant)
+  setTimeout(()=>{const t=getThread(msgTarget);if(t){t.msgs.push({who:"them",text:REPONSES[Math.floor(Math.random()*REPONSES.length)]});if(document.getElementById("thread").style.display==="block"&&curThread&&curThread.p.pid===msgTarget.pid)paintThread();else{t.unread=true;updateInboxCount();}}},1400);
+  openThread(msgTarget.pid);
+};
+
+/* ---------- Écrans messagerie ---------- */
+let inboxReturn="onboarding", curThread=null;
+function threadRowHTML(t){
+  const last=t.msgs[t.msgs.length-1];
+  const prev=(last.who==="me"?"Toi : ":"")+last.text;
+  return `<div class="crow thread-row" data-pid="${t.p.pid}"><img src="${avatarUrl(t.p)}"><div class="ci"><b>${t.p.nom}, ${t.p.age}</b><span class="preview">${prev}</span></div>${t.unread?'<span class="unread-dot"></span>':''}</div>`;
+}
+function renderInbox(){
+  const list=document.getElementById("threadList");
+  const vis=threads.filter(t=>!isBlocked(t.p.pid));
+  if(vis.length===0){ list.innerHTML='<div style="color:#8a6672;font-size:14px;font-style:italic;padding:14px;text-align:center">Tu n\'as reçu aucun message pour le moment.</div>'; return; }
+  list.innerHTML = vis.map(threadRowHTML).join("");
+  list.querySelectorAll(".thread-row").forEach(r=>r.onclick=()=>openThread(+r.dataset.pid));
+}
+function showInbox(){
+  document.getElementById("thread").style.display="none";
+  renderInbox();
+  document.getElementById("inbox").style.display="block";
+  document.getElementById("inbox").scrollTop=0;
+}
+document.getElementById("inboxBadge").onclick=showInbox;
+document.getElementById("inboxBack").onclick=()=>{document.getElementById("inbox").style.display="none";};
+function escMsg(s){ return (s==null?"":""+s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c])); }
+function paintThread(){
+  const box=document.getElementById("threadMsgs");
+  box.innerHTML=curThread.msgs.map(m=>{ const long=(m.text||"").length>180; return `<div class="msg ${m.who}${long?" clamp":""}">${escMsg(m.text)}</div>`; }).join("");
+  box.scrollTop=box.scrollHeight;
+}
+// Appuyer sur un message long le déplie / replie
+document.getElementById("threadMsgs").addEventListener("click",e=>{ const m=e.target.closest(".msg.clamp"); if(m) m.classList.toggle("open"); });
+// Quand on écrit dans le chat, on fait défiler le champ à la vue (le clavier ne le cache plus)
+["chatInput","threadInput"].forEach(id=>{ const el=document.getElementById(id); if(el) el.addEventListener("focus",()=>setTimeout(()=>{ try{el.scrollIntoView({block:"center",behavior:"smooth"});}catch(e){} },300)); });
+function openThread(pid){
+  curThread = threads.find(t=>t.p.pid===pid);
+  if(!curThread)return;
+  curThread.unread=false; updateInboxCount();
+  document.getElementById("threadName").textContent=`${curThread.p.nom}, ${curThread.p.age}`;
+  document.getElementById("contacts").style.display="none";
+  paintThread();
+  document.getElementById("thread").style.display="block";
+  document.getElementById("thread").scrollTop=0;
+}
+document.getElementById("threadBack").onclick=()=>{document.getElementById("thread").style.display="none";showInbox();};
+document.getElementById("threadForm").onsubmit=e=>{
+  e.preventDefault();
+  const inp=document.getElementById("threadInput");
+  const txt=inp.value.trim(); if(!txt||!curThread)return;
+  curThread.msgs.push({who:"me",text:txt}); inp.value=""; paintThread();
+  setTimeout(()=>{curThread.msgs.push({who:"them",text:REPONSES[Math.floor(Math.random()*REPONSES.length)]});paintThread();},1100+Math.random()*900);
+};
+
+/* ---------- Jetons : revenir sur la personne précédente ---------- */
+function updateTokens(){
+  document.getElementById("tokenCount").textContent=state.tokens;
+  const badge=document.getElementById("tokenBadge");
+  badge.innerHTML = state.tokens===0
+    ? '🎟️ <b>0</b> · Acheter des jetons'
+    : '🎟️ <b>'+state.tokens+'</b>';
+  badge.insertAdjacentHTML("beforeend",'<span class="notif-dot" id="tokenDot"></span>');
+  if(typeof refreshNotifs==="function") refreshNotifs();
+}
+updateTokens();   // affiche les 3 jetons offerts dès le départ
+document.getElementById("tokenBadge").onclick=()=>{document.getElementById("tokenPaywall").style.display="flex";};
+document.getElementById("vipBadge").onclick=()=>{
+  if(state.msgUnlimited){document.getElementById("vipStatus").style.display="flex";return;}
+  document.getElementById("packPaywall").style.display="flex";
+};
+document.getElementById("vipStatusClose").onclick=()=>{document.getElementById("vipStatus").style.display="none";};
+document.getElementById("backBtn").onclick=()=>{
+  if(history.length===0){document.getElementById("liveInfo").textContent="↩️ Personne à retrouver pour le moment.";return;}
+  if(state.tokens<=0){document.getElementById("tokenPaywall").style.display="flex";return;}
+  const prev=history[history.length-1];
+  document.getElementById("backName").textContent=`${prev.nom} (${prev.age})`;
+  document.getElementById("backTokensLeft").textContent=`Il te reste ${state.tokens} jeton(s).`;
+  document.getElementById("confirmBack").style.display="flex";
+};
+document.getElementById("confirmBackNo").onclick=()=>{document.getElementById("confirmBack").style.display="none";};
+document.getElementById("confirmBackYes").onclick=()=>{
+  document.getElementById("confirmBack").style.display="none";
+  if(state.tokens<=0 || history.length===0)return;
+  const prev=history[history.length-1];
+  // Le jeton n'est PAS débité tout de suite : on tente d'abord la reconnexion
+  const wait=document.getElementById("waitBack");
+  document.getElementById("waitSpin").textContent="⏳";
+  document.getElementById("waitTitle").textContent="Reconnexion…";
+  document.getElementById("waitTxt").textContent=`${prev.nom} est peut-être en pleine discussion. Tu es prioritaire — on te reconnecte dès que la personne se libère (souvent 1 à 2 min).`;
+  document.getElementById("waitClose").style.display="none";
+  wait.style.display="flex";
+  const dispo = Math.random()<0.7;   // 70% : la personne finit par se libérer
+  setTimeout(()=>{
+    if(dispo){
+      state.tokens--; updateTokens();
+      history.pop();
+      wait.style.display="none";
+      displayPartner(prev);
+      document.getElementById("liveInfo").textContent=`↩️ Reconnecté(e) avec ${prev.nom} · 1 jeton utilisé (${state.tokens} restants).`;
+    } else {
+      // pas dispo → jeton NON débité (rendu)
+      document.getElementById("waitSpin").textContent="😕";
+      document.getElementById("waitTitle").textContent="Pas disponible";
+      document.getElementById("waitTxt").textContent=`${prev.nom} n'est plus joignable pour l'instant. Ton jeton n'a pas été débité, tu le gardes 🎟️`;
+      document.getElementById("waitClose").style.display="block";
+    }
+  }, 2500+Math.random()*2500);
+};
+document.getElementById("waitClose").onclick=()=>{document.getElementById("waitBack").style.display="none";};
+// Achat de jetons
+document.getElementById("buyTokens").onclick=()=>{document.getElementById("tokenPaywall").style.display="flex";};
+document.getElementById("buyTokenCancel").onclick=()=>{document.getElementById("tokenPaywall").style.display="none";};
+document.querySelectorAll(".token-opt").forEach(b=>{
+  b.onclick=()=>{
+    const n=+b.dataset.tokens;
+    state.tokens+=n; updateTokens();
+    document.getElementById("tokenPaywall").style.display="none";
+    const info=document.getElementById("liveInfo");
+    if(info) info.textContent=`🎟️ +${n} jetons ajoutés ! Utilise-les pour revenir ↩️ ou offrir des fleurs 🌹.`;
   };
-  ws.onclose=()=>{ setStatus("Déconnecté"); };
-}
+});
 
-function showWaiting(count){
-  matched=false;
-  document.getElementById("waiting").classList.remove("hidden");
-  remoteV.srcObject=null; document.getElementById("remoteTag").textContent="…";
-  setStatus("🔎 En attente d'une personne…");
-  if(typeof count==="number") document.getElementById("qcount").textContent=count;
+/* ---------- Boost : se mettre en avant ---------- */
+let boostInt=null;
+function openBoost(){
+  // affiche la réserve de Boost VIP si dispo
+  document.getElementById("boostCredit").style.display = state.freeBoost>0 ? "block" : "none";
+  document.getElementById("boostPaywall").style.display="flex";
 }
-function setStatus(t){document.getElementById("liveStatus").textContent=t;}
-function info(t){document.getElementById("liveInfo").textContent=t||"";}
+document.getElementById("pl-boost").onclick=openBoost;
+document.getElementById("boostBtn").onclick=openBoost;
+document.getElementById("boostBadge").onclick=openBoost;
+document.getElementById("boostCancel").onclick=()=>{document.getElementById("boostPaywall").style.display="none";};
+document.getElementById("activateFreeBoost").onclick=()=>{
+  const min=state.freeBoost; state.freeBoost=0;
+  document.getElementById("boostBadge").classList.remove("has-credit");
+  document.getElementById("boostPaywall").style.display="none";
+  activateBoost(min);
+  startRecharge();   // le cadeau VIP se rechargera tout seul
+};
 
-async function startCall(m){
-  matched=true;
-  document.getElementById("waiting").classList.add("hidden");
-  document.getElementById("remoteTag").textContent=(m.peer.pseudo||"En ligne")+" "+(FLAGS[m.peer.origine]||"");
-  setStatus("💚 Connecté(e) en direct !"); info("");
-  pc=new RTCPeerConnection(ICE);
-  localStream.getTracks().forEach(t=>pc.addTrack(t,localStream));
-  pc.ontrack=(e)=>{ remoteV.srcObject=e.streams[0]; };
-  pc.onicecandidate=(e)=>{ if(e.candidate) ws.send(JSON.stringify({type:"signal",data:{ice:e.candidate}})); };
-  if(m.initiator){
-    const offer=await pc.createOffer(); await pc.setLocalDescription(offer);
-    ws.send(JSON.stringify({type:"signal",data:{sdp:pc.localDescription}}));
+// Recharge du boost cadeau VIP (tous les 2 jours ; ici court pour la démo)
+const BOOST_RECHARGE_SEC=25;   // en vrai : 2 jours = 172800 s
+let rechargeInt=null;
+function fmtRecharge(sec){
+  if(sec>=86400){const j=Math.floor(sec/86400),hh=Math.floor((sec%86400)/3600);return `${j}j ${hh}h`;}
+  if(sec>=3600){const hh=Math.floor(sec/3600),mm=Math.floor((sec%3600)/60);return `${hh}h ${mm}m`;}
+  return `${Math.floor(sec/60)}:${String(sec%60).padStart(2,"0")}`;
+}
+function startRecharge(){
+  clearInterval(rechargeInt);
+  let t=BOOST_RECHARGE_SEC;
+  const el=document.getElementById("boostRecharge"), tm=document.getElementById("rechargeTime");
+  el.style.display="block"; tm.textContent=fmtRecharge(t);
+  rechargeInt=setInterval(()=>{
+    t--; tm.textContent=fmtRecharge(t);
+    if(t<=0){
+      clearInterval(rechargeInt); rechargeInt=null;
+      el.style.display="none";
+      state.freeBoost=25;
+      document.getElementById("boostBadge").classList.add("has-credit");
+      const info=document.getElementById("liveInfo");
+      if(info) info.textContent="🎁 Ton boost cadeau VIP est de retour ! Active-le via 🚀 Boost.";
+    }
+  },1000);
+}
+document.querySelectorAll(".boost-opt[data-min]").forEach(b=>{   // seulement les vrais boutons Boost (pas les jetons)
+  b.onclick=()=>{
+    const min=+b.dataset.min;
+    document.getElementById("boostPaywall").style.display="none";
+    activateBoost(min);
+  };
+});
+let boostT=0, boostTotal=0;   // temps restant + référence pour la jauge
+function drawBoost(){
+  const s=`${Math.floor(boostT/60)}:${String(boostT%60).padStart(2,"0")}`;
+  document.getElementById("boostLeft").textContent=s;
+  document.getElementById("boostFrameTime").textContent=s;
+  document.getElementById("boostRect").style.strokeDasharray=`${Math.max(0,boostT/boostTotal)*100} 100`;
+}
+function activateBoost(min){
+  if(!min || isNaN(min)) return;    // sécurité : durée invalide → on ne fait rien
+  const add=min*60;
+  boostT+=add;                      // ← on CUMULE au lieu de remplacer
+  boostTotal=boostT;                // la jauge repart pleine
+  document.getElementById("boostBadge").classList.add("active");
+  document.getElementById("boostTab").style.display="block";
+  document.getElementById("boostRing").style.display="block";
+  drawBoost();
+  const info=document.getElementById("liveInfo");
+  if(info) info.textContent=`🚀 Boost +${min} min ! Total : ${Math.ceil(boostT/60)} min. Tu passes en priorité 💞`;
+  if(!boostInt){
+    boostInt=setInterval(()=>{
+      boostT--; drawBoost();
+      if(boostT<=0){clearInterval(boostInt);boostInt=null;
+        document.getElementById("boostLeft").textContent="Boost";
+        document.getElementById("boostBadge").classList.remove("active");
+        document.getElementById("boostTab").style.display="none";
+        document.getElementById("boostRing").style.display="none";}
+    },1000);
   }
 }
-async function onSignal(data){
-  if(!pc) return;
-  if(data.sdp){
-    await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
-    if(data.sdp.type==="offer"){ const ans=await pc.createAnswer(); await pc.setLocalDescription(ans); ws.send(JSON.stringify({type:"signal",data:{sdp:pc.localDescription}})); }
-  } else if(data.ice){ try{ await pc.addIceCandidate(new RTCIceCandidate(data.ice)); }catch(e){} }
-}
-function teardownPC(){ if(pc){ pc.close(); pc=null; } remoteV.srcObject=null; }
 
-document.getElementById("nextBtn").onclick=()=>{ teardownPC(); if(ws&&ws.readyState===1) ws.send(JSON.stringify({type:"next"})); showWaiting(); };
-document.getElementById("stopBtn").onclick=()=>{
-  teardownPC(); if(ws&&ws.readyState===1) ws.send(JSON.stringify({type:"stop"}));
-  if(localStream) localStream.getTracks().forEach(t=>t.stop());
-  document.getElementById("live").classList.add("hidden");
-  document.getElementById("setup").classList.remove("hidden");
+/* ---------- Fleurs (payées en jetons) ---------- */
+const flowerPicker=document.getElementById("flowerPicker");
+document.getElementById("flowerBtn").onclick=()=>{
+  if(!partner)return;
+  document.getElementById("fpName").textContent=partner.nom;
+  flowerPicker.style.display = flowerPicker.style.display==="block" ? "none" : "block";
+};
+document.getElementById("flowerClose").onclick=()=>{flowerPicker.style.display="none";};
+
+document.querySelectorAll(".fp-opt").forEach(btn=>{
+  btn.onclick=()=>{
+    const cost=+btn.dataset.cost, emo=btn.dataset.emo, lbl=btn.dataset.lbl, gain=+btn.dataset.time, q=btn.dataset.q;
+    if(state.tokens<cost){
+      flowerPicker.style.display="none";
+      document.getElementById("liveInfo").textContent=`🌹 Il te faut ${cost} jeton(s) pour cette fleur — recharge-toi !`;
+      document.getElementById("tokenPaywall").style.display="flex";
+      return;
+    }
+    state.tokens-=cost; updateTokens();
+    flowerPicker.style.display="none";
+    flyFlower(emo,cost);
+    addMsg("me",`🌹 Tu as offert une fleur ${lbl} à ${partner.nom} !`);
+    document.getElementById("liveInfo").textContent=`${partner.nom} a reçu ta fleur ${emo} 🥰 (-${cost} jeton${cost>1?"s":""}, tu gagnes ${q} de temps !)`;
+    // la fleur fait gagner du temps (proportionnel aux jetons)
+    boostTimer(gain, `Fleur ${emo} +temps`);
+    // la personne réagit
+    setTimeout(()=>{if(partner)addMsg("them", cost>=5?"Waw, elle est magnifique 😍 merci !!":cost>=3?"Oh c'est trop mignon 🥰":"Merci c'est adorable 😊");},1100);
+  };
+});
+
+function flyFlower(emo,cost){
+  const vid=document.getElementById("partnerImg").parentElement;
+  const size = cost>=5?90 : cost>=3?64 : 42;   // plus la fleur est chère, plus elle est grosse
+  const f=document.createElement("span");
+  f.className="flying-flower"; f.textContent=emo;
+  f.style.fontSize=size+"px";
+  if(cost>=3) f.style.filter="hue-rotate(140deg)";   // turquoise
+  if(cost>=5) f.style.filter="drop-shadow(0 0 14px #ff2d6b)";  // rose brillante
+  vid.appendChild(f);
+  setTimeout(()=>f.remove(),2500);
+}
+function hint(){document.getElementById("liveInfo").textContent=`💗 ${partner.nom} t'a envoyé un coup de cœur !`;boostTimer(30,`${partner.nom} ❤️ +30s`);}
+
+/* ---------- Timer ---------- */
+let tLeft=0, tMax=90;
+const el=document.getElementById("timer"),
+      gFill=document.getElementById("gaugeFill"),
+      gHeart=document.getElementById("gaugeHeart"),
+      gLbl=document.getElementById("gaugeLbl"),
+      boostTxt=document.getElementById("boostTxt");
+function drawGauge(){
+  const m=String(Math.floor(tLeft/60)).padStart(2,"0"),s=String(tLeft%60).padStart(2,"0");
+  const txt=`${m}:${s}`; el.textContent=txt; gLbl.textContent=txt;
+  const pct=Math.max(0,Math.min(100,(tLeft/tMax)*100));
+  gFill.style.width=pct+"%"; gHeart.style.left=pct+"%";
+  gFill.classList.toggle("low", tLeft<=15);
+}
+function startTimer(sec){
+  clearInterval(timerInt); tMax=sec; tLeft=sec; drawGauge();
+  timerInt=setInterval(()=>{
+    tLeft--; drawGauge();
+    if(tLeft===15){   // presque fini → on propose une fleur pour gagner du temps
+      document.getElementById("liveInfo").innerHTML="⏱️ Plus que 15s ! Offre une fleur 🌹 pour <b>gagner du temps</b>.";
+    }
+    if(tLeft<=0){clearInterval(timerInt);nextPartner();}
+  },1000);
+}
+// Coup de cœur → la jauge remonte d'un coup
+function boostTimer(bonus,label){
+  tLeft+=bonus;                       // on ajoute tout le temps gagné
+  if(tLeft>tMax) tMax=tLeft;          // le plafond monte pour tout afficher
+  gFill.classList.add("boost"); drawGauge();
+  gHeart.classList.remove("pop"); void gHeart.offsetWidth; gHeart.classList.add("pop");
+  boostTxt.textContent=label||`+${bonus}s ❤️`;
+  boostTxt.classList.remove("show"); void boostTxt.offsetWidth; boostTxt.classList.add("show");
+  setTimeout(()=>gFill.classList.remove("boost"),650);
+}
+
+/* ---------- Chat ---------- */
+function addMsg(who,txt){
+  const d=document.createElement("div");d.className="msg "+who;d.textContent=txt;
+  const box=document.getElementById("msgs");box.appendChild(d);box.scrollTop=box.scrollHeight;
+}
+document.getElementById("chatForm").onsubmit=e=>{
+  e.preventDefault();const inp=document.getElementById("chatInput");
+  if(!inp.value.trim())return;addMsg("me",inp.value.trim());inp.value="";
+  setTimeout(()=>addMsg("them",REPONSES[Math.floor(Math.random()*REPONSES.length)]),1000+Math.random()*1200);
 };
 
-// Emojis identiques sur tous les appareils (Twemoji)
-function parseEmoji(){ try{ if(window.twemoji) twemoji.parse(document.body,{folder:"svg",ext:".svg"}); }catch(e){} }
-parseEmoji(); setInterval(parseEmoji, 1500);
+/* ---------- Boutons ---------- */
+document.getElementById("nextBtn").onclick=()=>{
+  const zappe=partner;   // la personne qu'on vient de passer
+  nextPartner();
+  if(zappe) document.getElementById("liveInfo").innerHTML=`↩️ Tu as passé ${zappe.nom} — un regret ? <b>Reviens avec un jeton</b> (bouton ↩️).`;
+};
+document.getElementById("reportBtn").onclick=()=>{document.getElementById("liveInfo").textContent="🚫 Personne signalée. On passe à la personne suivante…";setTimeout(nextPartner,900);};
+// Micro : se mettre en muet
+let micMuted=false;
+document.getElementById("muteBtn").onclick=()=>{
+  micMuted=!micMuted;
+  if(stream) stream.getAudioTracks().forEach(t=>t.enabled=!micMuted);
+  const b=document.getElementById("muteBtn");
+  b.textContent=micMuted?"🔇":"🎤";
+  b.classList.toggle("muted",micMuted);
+  document.querySelector("#muteBtn").parentElement.querySelector(".clabel").textContent=micMuted?"Muet":"Micro";
+  document.getElementById("liveInfo").textContent=micMuted?"🔇 Ton micro est coupé":"🎤 Ton micro est activé";
+};
+document.getElementById("likeBtn").onclick=()=>{
+  if(iLiked)return;iLiked=true;
+  document.getElementById("likeBtn").style.background="rgba(255,255,255,.25)";
+  document.getElementById("liveInfo").textContent=`Tu as eu un coup de cœur pour ${partner.nom} 💌`;
+  boostTimer(30,"Toi ❤️ +30s");
+  if(window._partnerLike){ setTimeout(showMatch,700); }
+  else { setTimeout(()=>{document.getElementById("liveInfo").textContent=`En attente que ${partner.nom} craque aussi…`;},700);
+         setTimeout(()=>{ if(iLiked && Math.random()<.4) showMatch(); },4000); }
+};
+
+/* ---------- Match : décision mutuelle « on continue 3 min ? » ---------- */
+let meDecision=null, partnerDecision=null, decideTimer=null, changedMind=false, partnerReconsiderScheduled=false;
+const dPartnerName=document.getElementById("dPartnerName"),
+      dPartnerStatus=document.getElementById("dPartnerStatus"),
+      dMeWrap=document.getElementById("dMeWrap"),
+      matchNote=document.getElementById("matchNote"),
+      meYes=document.getElementById("meYes"), meNo=document.getElementById("meNo"),
+      nextMatchBtn=document.getElementById("nextMatchBtn");
+
+function showMatch(){
+  clearInterval(timerInt); clearTimeout(decideTimer);
+  if(partner) addMatch(partner);   // enregistre le match mutuel dans « Mes rencontres »
+  meDecision=null; partnerDecision=null; changedMind=false; partnerReconsiderScheduled=false;
+  document.getElementById("matchTxt").textContent=`Toi & ${partner.nom} (${partner.age}) ${FLAGS[partner.pays]||""} : coup de cœur mutuel !`;
+  dPartnerName.textContent=partner.nom;
+  // reset des statuts
+  dPartnerStatus.className="dstatus waiting"; dPartnerStatus.textContent="⏳ en attente…";
+  dMeWrap.innerHTML='<button class="dbtn yes" id="meYes">✓ Continuer</button><button class="dbtn no" id="meNo">✖ Passer</button>';
+  document.getElementById("meYes").onclick=()=>decideMe(true);
+  document.getElementById("meNo").onclick=()=>decideMe(false);
+  matchNote.textContent=""; nextMatchBtn.style.display="none";
+  document.getElementById("changeMindBtn").style.display="none";
+  document.getElementById("match").style.display="flex";
+  startMatchCountdown();   // fenêtre commune : personne ne quitte tant que le temps n'est pas écoulé
+  // le partenaire décide de son côté en temps réel (simulé)
+  decideTimer=setTimeout(()=>{
+    partnerDecision = Math.random()<0.75;   // souvent la personne veut continuer
+    renderPartner(); resolve();
+  }, 2000+Math.random()*4000);
+}
+
+function renderPartner(){
+  if(partnerDecision===true){dPartnerStatus.className="dstatus ok stamp";dPartnerStatus.textContent=`✓ ${partner.nom} veut continuer`;}
+  else if(partnerDecision===false){dPartnerStatus.className="dstatus no stamp";dPartnerStatus.textContent=`✖ ${partner.nom} a passé`;}
+}
+
+function decideMe(yes){
+  meDecision=yes;
+  dMeWrap.className="dstatus "+(yes?"ok stamp":"no stamp");
+  dMeWrap.innerHTML = yes ? "✓ Tu veux continuer" : "✖ Tu as passé";
+  resolve();
+}
+
+// Fenêtre de décision commune (compte à rebours)
+let matchCountInt=null;
+function startMatchCountdown(){
+  clearInterval(matchCountInt);
+  let t=15; const el=document.getElementById("matchTimer");
+  el.className=""; el.textContent=`⏳ ${t}s pour décider`;
+  matchCountInt=setInterval(()=>{
+    t--;
+    el.textContent=`⏳ ${t}s pour décider`;
+    if(t<=5) el.className="urgent";
+    if(t<=0){ clearInterval(matchCountInt); endMatchWindow(); }
+  },1000);
+}
+function endMatchWindow(){
+  clearInterval(matchCountInt); clearTimeout(decideTimer);
+  document.getElementById("match").style.display="none";
+  nextPartner();
+}
+
+function resolve(){
+  const cmBtn=document.getElementById("changeMindBtn");
+
+  // Les deux OUI → on continue
+  if(meDecision===true && partnerDecision===true){
+    clearInterval(matchCountInt); clearTimeout(decideTimer);
+    cmBtn.style.display="none";
+    matchNote.textContent="💞 Vous continuez ensemble pour 3 minutes !";
+    setTimeout(()=>{
+      document.getElementById("match").style.display="none";
+      startTimer(180);
+      addMsg("them",`On continue tous les deux 🥰 on a 3 min rien qu'à nous…`);
+    },900);
+    return;
+  }
+
+  // Les deux ont passé → terminé
+  if(meDecision===false && partnerDecision===false){
+    clearInterval(matchCountInt); clearTimeout(decideTimer);
+    cmBtn.style.display="none";
+    matchNote.textContent="Vous avez passé tous les deux. Place à la personne suivante !";
+    setTimeout(endMatchWindow,1200);
+    return;
+  }
+
+  // TU as passé, la personne veut continuer → tu peux payer AVANT la fin du temps
+  if(meDecision===false && partnerDecision===true){
+    matchNote.innerHTML=`${partner.nom} veut continuer 💗 <b>Change d'avis avant la fin du temps</b> (2 jetons).`;
+    cmBtn.style.display="block";
+    nextMatchBtn.style.display="block";
+    return;
+  }
+
+  // TU veux continuer, la personne a passé → la personne peut encore revenir avant la fin du temps
+  if(meDecision===true && partnerDecision===false){
+    matchNote.innerHTML=`Ton oui est <b>verrouillé</b> ✓ ${partner.nom} a passé, mais peut encore revenir <b>avant la fin du temps</b> 💗`;
+    cmBtn.style.display="none";
+    nextMatchBtn.style.display="none";   // tu as dit oui → tu ne peux plus quitter (ça protège qui paie)
+    // comme TOI tu veux continuer, la personne peut se raviser (payer 2 jetons) — une seule fois
+    if(!partnerReconsiderScheduled){
+      partnerReconsiderScheduled=true;
+      if(Math.random()<0.5){
+        setTimeout(()=>{
+          if(document.getElementById("match").style.display!=="flex")return;
+          if(meDecision!==true || partnerDecision!==false)return;   // seulement si tu veux toujours continuer
+          partnerDecision=true;
+          dPartnerStatus.className="dstatus ok stamp";
+          dPartnerStatus.textContent=`🔄 ${partner.nom} a changé d'avis · veut continuer`;
+          matchNote.innerHTML=`💞 ${partner.nom} a utilisé <b>2 jetons</b> pour changer d'avis !`;
+          resolve();
+        }, 2000+Math.random()*2500);
+      }
+    }
+    return;
+  }
+
+  // En attente d'une réponse (l'un des deux n'a pas encore choisi)
+  if(meDecision===true){
+    matchNote.innerHTML=`Ton oui est <b>verrouillé</b> ✓ En attente de la réponse de ${partner.nom}…`;
+    nextMatchBtn.style.display="none";   // ton oui t'engage
+  } else if(meDecision===false){
+    matchNote.textContent=`Tu as passé… on attend la réponse de ${partner.nom}…`;
+    cmBtn.style.display="none";
+  }
+}
+document.getElementById("nextMatchBtn").onclick=()=>{clearInterval(matchCountInt);clearTimeout(decideTimer);document.getElementById("match").style.display="none";nextPartner();};
+// Changer d'avis : proposé UNIQUEMENT quand la personne a dit oui → 2 jetons, on continue
+document.getElementById("changeMindBtn").onclick=()=>{
+  if(state.tokens<2){document.getElementById("tokenPaywall").style.display="flex";return;}
+  clearInterval(matchCountInt); clearTimeout(decideTimer);
+  state.tokens-=2; updateTokens();
+  meDecision=true;
+  dMeWrap.className="dstatus ok stamp";
+  dMeWrap.innerHTML="✓ Tu veux continuer";
+  document.getElementById("changeMindBtn").style.display="none";
+  if(partner) addMatch(partner);
+  document.getElementById("match").style.display="none";
+  startTimer(180);
+  addMsg("them",`Ahh finalement tu restes 🥰 on a 3 min rien qu'à nous !`);
+  document.getElementById("liveInfo").textContent=`💞 Tu as changé d'avis — 2 jetons utilisés (${state.tokens} restants).`;
+};
+
+/* ---------- Emojis identiques iPhone / Android (Twemoji) ---------- */
+function reparseEmoji(){
+  try{ if(window.twemoji) twemoji.parse(document.body, {folder:"svg", ext:".svg"}); }catch(e){}
+}
+reparseEmoji();
+// re-parse régulier pour couvrir les emojis ajoutés en direct (chat, profils…)
+setInterval(reparseEmoji, 1500);
+
+/* ---------- Sauvegarde (rencontres, messages, paiements, âge) liée au compte ---------- */
+function saveState(){
+  if(!localStorage.getItem("sdl_user")) return;   // on ne sauvegarde qu'avec un compte
+  try{ localStorage.setItem("sdl_state", JSON.stringify({
+    ageMine:state.ageMine, genre:state.genre, pref:state.pref, hairMine:state.hairMine,
+    hairPref:state.hairPref, agePref:state.agePref, origine:state.origine, cible:state.cible,
+    villeMienne:state.villeMienne, villeCible:state.villeCible,
+    premium:state.premium, tokens:state.tokens, msgUnlimited:state.msgUnlimited, freeBoost:state.freeBoost,
+    matches, missed, threads, blocked:state.blocked
+  })); }catch(e){}
+}
+function loadState(){
+  let d; try{ d=JSON.parse(localStorage.getItem("sdl_state")||"null"); }catch(e){}
+  if(!d || !localStorage.getItem("sdl_user")) return;
+  Object.assign(state,{ageMine:d.ageMine,genre:d.genre,pref:d.pref,hairMine:d.hairMine,hairPref:d.hairPref,agePref:d.agePref,origine:d.origine||"fr",cible:d.cible||"fr",villeMienne:d.villeMienne,villeCible:d.villeCible,premium:!!d.premium,tokens:(d.tokens==null?3:d.tokens),msgUnlimited:!!d.msgUnlimited,freeBoost:d.freeBoost||0});
+  state.blocked=d.blocked||[];
+  matches=d.matches||[]; missed=d.missed||[]; threads=d.threads||[];
+  updateTokens(); updateContactsCount(); updateInboxCount(); updateBlockedCount();
+  if(state.ageMine){ const a=document.getElementById("ageMine"); if(a)a.value=state.ageMine; }
+  if(state.premium){ document.getElementById("villeLock").style.display="none"; document.getElementById("villeCible").style.display="block"; fillTargetCity(); if(state.villeCible)document.getElementById("villeCible").value=state.villeCible; }
+  if(state.msgUnlimited){ unlockVipFilters(); document.getElementById("vipBadge").classList.add("active"); document.getElementById("vipState").textContent="VIP ✓"; document.getElementById("vipPct").style.display="none"; }
+  if(state.freeBoost>0){ document.getElementById("boostBadge").classList.add("has-credit"); }
+  checkReady();
+}
+loadState();
+setInterval(saveState, 2500);   // sauvegarde automatique
+
+// Flèches pour ranger les onglets réunis (téléphone)
+(function(){
+  var cl=document.getElementById("collapseLeft"), cr=document.getElementById("collapseRight");
+  if(cl) cl.onclick=function(){
+    var h=document.body.classList.toggle("hide-left-badges");
+    cl.querySelector(".arw").textContent=h?"›":"‹";
+    refreshNotifs();
+  };
+  if(cr) cr.onclick=function(){
+    var h=document.body.classList.toggle("hide-right-badges");
+    cr.querySelector(".arw").textContent=h?"‹":"›";
+    refreshNotifs();
+  };
+})();
+
+// ===== Notifications (pastilles rouges) sur flèches + badges =====
+var _tokAck=false, _giftAck=false, _lowPrev=false, _giftPrev=false;
+function setDot(id, show, val){ const el=document.getElementById(id); if(!el) return; el.textContent = (val==null?"":val); el.classList.toggle("show", !!show); }
+function refreshNotifs(){
+  const tk = (typeof tokens!=="undefined") ? tokens : (state.tokens||0);
+  const lowTok = tk <= 1;
+  const gift = (state.freeBoost||0) > 0;
+  // ré-armer la notif quand la condition (re)devient vraie
+  if(lowTok && !_lowPrev){ _tokAck=false; }
+  if(gift && !_giftPrev){ _giftAck=false; }
+  _lowPrev=lowTok; _giftPrev=gift;
+  // ouvrir la fenêtre = notif vue
+  if(document.getElementById("tokenPaywall").style.display==="flex"){ _tokAck=true; }
+  if(document.getElementById("boostPaywall").style.display==="flex"){ _giftAck=true; }
+  // messages non lus
+  const unread = (typeof threads!=="undefined") ? threads.filter(t=>!isBlocked(t.p.pid) && t.unread).length : 0;
+  const colL = document.body.classList.contains("hide-left-badges");
+  const colR = document.body.classList.contains("hide-right-badges");
+  // Flèches (quand le groupe est replié) : la flèche porte la notif du groupe
+  setDot("leftNotif", unread>0 && colL, unread>9?"9+":unread);
+  setDot("rightNotif", (( lowTok&&!_tokAck )||( gift&&!_giftAck )) && colR, (gift&&!lowTok)?"🎁":"!");
+  // Badges spécifiques (quand le groupe est déplié) : chacun sa notif
+  setDot("tokenDot", lowTok && !_tokAck && !colR, "!");
+  setDot("boostDot", gift && !_giftAck && !colR, "🎁");
+}
+window.refreshNotifs = refreshNotifs;
+refreshNotifs();
+setInterval(refreshNotifs, 700);
+
+/* =================================================================
+   VRAI MATCHMAKING — vidéo WebRTC entre vraies personnes.
+   Ce bloc remplace la logique simulée du live par du réel.
+   ================================================================= */
+(function(){
+  const ICE={iceServers:[{urls:"stun:stun.l.google.com:19302"},{urls:"stun:stun1.l.google.com:19302"}]};
+  let ws=null, pc=null, dc=null, connected=false;
+  const remote=()=>document.getElementById("partnerVid");
+  function info(t){ const e=document.getElementById("liveInfo"); if(e) e.textContent=t||""; }
+  function wsSend(o){ try{ if(ws&&ws.readyState===1) ws.send(JSON.stringify(o)); }catch(e){} }
+  function dcSend(o){ try{ if(dc&&dc.readyState==="open") dc.send(JSON.stringify(o)); }catch(e){} }
+
+  function joinPayload(){
+    return {type:"join", genre:state.genre, pref:state.pref, origine:state.origine||"fr", pays:state.cible||"all", pseudo:(state.pseudo||"")};
+  }
+
+  function connect(){
+    return new Promise((resolve)=>{
+      const proto=location.protocol==="https:"?"wss":"ws";
+      try{ ws=new WebSocket(proto+"://"+location.host); }catch(e){ resolve(); return; }
+      ws.onopen=()=>{ connected=true; resolve(); };
+      ws.onclose=()=>{ connected=false; };
+      ws.onerror=()=>{ };
+      ws.onmessage=async(ev)=>{
+        let m; try{ m=JSON.parse(ev.data); }catch(e){ return; }
+        if(m.type==="waiting"){ showSearching(m.count); }
+        else if(m.type==="matched"){ onMatched(m); }
+        else if(m.type==="signal"){ await onSignal(m.data); }
+        else if(m.type==="peer-left"){ info("La personne est partie. On te cherche quelqu'un d'autre…"); teardownPeer(); wsSend({type:"next"}); showSearching(); }
+      };
+    });
+  }
+
+  function showSearching(count){
+    const v=remote(); if(v) v.srcObject=null;
+    const tag=document.getElementById("partnerTag"); if(tag) tag.textContent="🔎 Recherche…";
+    const fl=document.getElementById("partnerFlag"); if(fl) fl.textContent="⏳";
+    clearInterval(timerInt);
+    info("On te cherche une personne en direct… "+(typeof count==="number"?("(en attente : "+count+")"):""));
+  }
+
+  function teardownPeer(){
+    try{ if(dc){ dc.onmessage=null; dc.close(); } }catch(e){}
+    try{ if(pc){ pc.onicecandidate=null; pc.ontrack=null; pc.close(); } }catch(e){}
+    dc=null; pc=null;
+    const v=remote(); if(v) v.srcObject=null;
+  }
+
+  function setupDC(ch){
+    dc=ch;
+    dc.onmessage=(e)=>{
+      let d; try{ d=JSON.parse(e.data); }catch(_){ d={t:"msg",text:String(e.data)}; }
+      if(d.t==="msg"){ addMsg("them", d.text); }
+      else if(d.t==="like"){ onPeerLike(); }
+      else if(d.t==="decide"){ partnerDecision=!!d.yes; if(typeof renderPartner==="function") renderPartner(); if(typeof resolve==="function") resolve(); }
+    };
+  }
+
+  async function onMatched(m){
+    teardownPeer();
+    pc=new RTCPeerConnection(ICE);
+    if(typeof stream!=="undefined" && stream) stream.getTracks().forEach(t=>pc.addTrack(t,stream));
+    pc.ontrack=(e)=>{ const v=remote(); if(v) v.srcObject=e.streams[0]; };
+    pc.onicecandidate=(e)=>{ if(e.candidate) wsSend({type:"signal",data:{ice:e.candidate}}); };
+    if(m.initiator){
+      setupDC(pc.createDataChannel("chat"));
+      const offer=await pc.createOffer(); await pc.setLocalDescription(offer);
+      wsSend({type:"signal",data:{sdp:pc.localDescription}});
+    } else {
+      pc.ondatachannel=(e)=>setupDC(e.channel);
+    }
+    const peer=m.peer||{};
+    const nom=(peer.pseudo&&peer.pseudo.trim())?peer.pseudo.trim():"Quelqu'un";
+    partner={ nom, age:"", pays:peer.origine||"", g:peer.genre||"", ville:null, pid:++pidCounter, real:true };
+    iLiked=false; window._partnerLike=false;
+    const lb=document.getElementById("likeBtn"); if(lb) lb.style.background="linear-gradient(135deg,var(--rouge),var(--rose))";
+    document.getElementById("msgs").innerHTML="";
+    document.getElementById("partnerTag").textContent = nom + (FLAGS[partner.pays]?(" "+FLAGS[partner.pays]):"");
+    document.getElementById("partnerFlag").textContent = FLAGS[partner.pays]||"🌍";
+    if(typeof reparseEmoji==="function") reparseEmoji();
+    info("💚 Connecté(e) en direct ! Dis bonjour 👋");
+    startTimer(90);
+  }
+
+  async function onSignal(data){
+    if(!pc) return;
+    if(data.sdp){
+      await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
+      if(data.sdp.type==="offer"){ const ans=await pc.createAnswer(); await pc.setLocalDescription(ans); wsSend({type:"signal",data:{sdp:pc.localDescription}}); }
+    } else if(data.ice){ try{ await pc.addIceCandidate(new RTCIceCandidate(data.ice)); }catch(e){} }
+  }
+
+  async function connectAndJoin(){
+    if(!connected || !ws || ws.readyState>1){ await connect(); }
+    showSearching();
+    wsSend(joinPayload());
+  }
+
+  // ---- Remplace la logique simulée ----
+  window.nextPartner=function(){
+    if(typeof partner!=="undefined" && partner) history.push(partner);
+    teardownPeer();
+    showSearching();
+    if(connected) wsSend({type:"next"});
+    else connectAndJoin();
+  };
+
+  // Démarrer le live : caméra + connexion réelle au serveur
+  document.getElementById("start").onclick=async()=>{
+    if(!(state.genre&&state.pref)) return;
+    document.getElementById("onboarding").style.display="none";
+    document.getElementById("live").style.display="block";
+    document.body.classList.add("started");
+    try{
+      try{ stream=await navigator.mediaDevices.getUserMedia({video:true,audio:true}); }
+      catch(e){ stream=await navigator.mediaDevices.getUserMedia({video:true,audio:false}); }
+      document.getElementById("me").srcObject=stream;
+    }catch(e){
+      document.getElementById("me").parentElement.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100%;text-align:center;padding:14px;color:#ffb8cd">📷 Caméra non disponible.<br>Autorise l\'accès pour te voir en live.</div><span class="tag">Toi</span>';
+    }
+    connectAndJoin();
+  };
+
+  // Chat réel (canal de données WebRTC)
+  document.getElementById("chatForm").onsubmit=(e)=>{
+    e.preventDefault(); const inp=document.getElementById("chatInput");
+    const v=inp.value.trim(); if(!v) return;
+    addMsg("me",v); inp.value="";
+    dcSend({t:"msg",text:v});
+  };
+
+  // Coup de cœur réel
+  document.getElementById("likeBtn").onclick=()=>{
+    if(iLiked) return; iLiked=true;
+    document.getElementById("likeBtn").style.background="rgba(255,255,255,.25)";
+    info("Tu as eu un coup de cœur 💌");
+    boostTimer(30,"Toi ❤️ +30s");
+    dcSend({t:"like"});
+    if(window._partnerLike) setTimeout(showMatch,500);
+    else info("En attente que la personne craque aussi…");
+  };
+  function onPeerLike(){
+    window._partnerLike=true;
+    info("💗 "+(partner?partner.nom:"La personne")+" t'a envoyé un coup de cœur !");
+    boostTimer(30,"❤️ +30s");
+    if(iLiked) setTimeout(showMatch,500);
+  }
+
+  // Match : décision mutuelle RÉELLE (plus de tirage au sort)
+  window.showMatch=function(){
+    clearInterval(timerInt); clearTimeout(decideTimer);
+    if(partner) addMatch(partner);
+    meDecision=null; partnerDecision=null; changedMind=false; partnerReconsiderScheduled=false;
+    document.getElementById("matchTxt").textContent="Toi & "+partner.nom+" : coup de cœur mutuel !";
+    document.getElementById("dPartnerName").textContent=partner.nom;
+    const ps=document.getElementById("dPartnerStatus"); ps.className="dstatus waiting"; ps.textContent="⏳ en attente…";
+    const mw=document.getElementById("dMeWrap");
+    mw.className=""; mw.innerHTML='<button class="dbtn yes" id="meYes">✓ Continuer</button><button class="dbtn no" id="meNo">✖ Passer</button>';
+    document.getElementById("meYes").onclick=()=>decideMe(true);
+    document.getElementById("meNo").onclick=()=>decideMe(false);
+    document.getElementById("matchNote").textContent=""; document.getElementById("nextMatchBtn").style.display="none";
+    document.getElementById("changeMindBtn").style.display="none";
+    document.getElementById("match").style.display="flex";
+    startMatchCountdown();
+  };
+  window.decideMe=function(yes){
+    meDecision=yes;
+    const mw=document.getElementById("dMeWrap");
+    mw.className="dstatus "+(yes?"ok stamp":"no stamp");
+    mw.innerHTML=yes?"✓ Tu veux continuer":"✖ Tu as passé";
+    dcSend({t:"decide",yes:yes});
+    if(typeof resolve==="function") resolve();
+  };
+
+  // « Revenir » n'a pas de sens en direct
+  const bb=document.getElementById("backBtn");
+  if(bb) bb.onclick=()=>info("↩️ « Revenir » n'est pas disponible en direct — la personne précédente est déjà repartie.");
+
+  // Quitter le live → prévenir le serveur et couper proprement
+  const qy=document.getElementById("quitYes");
+  if(qy) qy.onclick=()=>{
+    document.getElementById("quitConfirm").style.display="none";
+    teardownPeer(); wsSend({type:"stop"}); try{ if(ws) ws.close(); }catch(_){}
+    connected=false;
+    if(typeof stream!=="undefined" && stream) stream.getTracks().forEach(t=>t.stop());
+    clearInterval(timerInt);
+    document.getElementById("live").style.display="none";
+    document.getElementById("onboarding").style.display="block";
+    document.body.classList.remove("started");
+    window.scrollTo(0,0);
+  };
+})();
 </script>
 </body>
 </html>
