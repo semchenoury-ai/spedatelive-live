@@ -37,6 +37,33 @@ async function initDB() {
       settings JSONB DEFAULT '{}'::jsonb,
       created_at TIMESTAMPTZ DEFAULT now()
     );`);
+  // Coups de cœur (un like par sens). Match mutuel = deux likes croisés.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS likes (
+      liker_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      liked_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      created_at TIMESTAMPTZ DEFAULT now(),
+      PRIMARY KEY (liker_id, liked_id)
+    );`);
+  // Messages entre membres
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS messages (
+      id SERIAL PRIMARY KEY,
+      from_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      to_id   INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      text    TEXT NOT NULL,
+      read_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ DEFAULT now()
+    );`);
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_msg_pair ON messages(from_id, to_id, created_at);`);
+  // Blocages
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS blocks (
+      blocker_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      blocked_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      created_at TIMESTAMPTZ DEFAULT now(),
+      PRIMARY KEY (blocker_id, blocked_id)
+    );`);
   console.log("✅ Base de données prête.");
 }
 
@@ -133,6 +160,94 @@ async function handleAPI(req, res, url){
     return sendJSON(res,200,{ ok:true });
   }
 
+  // ---- Coup de cœur : enregistré + détection du match mutuel ----
+  if(url==="/api/like" && req.method==="POST"){
+    const u=await userFromAuth(req); if(!u) return sendJSON(res,401,{error:"Non connecté."});
+    const b=await readBody(req); const other=parseInt(b.otherId,10);
+    if(!other || other===u.id) return sendJSON(res,400,{error:"Cible invalide."});
+    await pool.query("INSERT INTO likes(liker_id,liked_id) VALUES($1,$2) ON CONFLICT DO NOTHING",[u.id,other]);
+    const r=await pool.query("SELECT 1 FROM likes WHERE liker_id=$1 AND liked_id=$2",[other,u.id]);
+    return sendJSON(res,200,{ mutual: r.rowCount>0 });
+  }
+
+  // ---- Mes rencontres : matchs mutuels + "ils t'ont mis un cœur" ----
+  if(url==="/api/relations" && req.method==="GET"){
+    const u=await userFromAuth(req); if(!u) return sendJSON(res,401,{error:"Non connecté."});
+    const matches=await pool.query(
+      `SELECT us.id,us.pseudo,us.genre,us.origine,us.age,us.photo
+       FROM likes l1 JOIN likes l2 ON l1.liked_id=l2.liker_id AND l1.liker_id=l2.liked_id
+       JOIN users us ON us.id=l1.liked_id
+       WHERE l1.liker_id=$1 AND NOT EXISTS(SELECT 1 FROM blocks b WHERE b.blocker_id=$1 AND b.blocked_id=us.id)`,[u.id]);
+    const likedMe=await pool.query(
+      `SELECT us.id,us.pseudo,us.genre,us.origine,us.age,us.photo
+       FROM likes l JOIN users us ON us.id=l.liker_id
+       WHERE l.liked_id=$1
+         AND NOT EXISTS(SELECT 1 FROM likes l2 WHERE l2.liker_id=$1 AND l2.liked_id=us.id)
+         AND NOT EXISTS(SELECT 1 FROM blocks b WHERE b.blocker_id=$1 AND b.blocked_id=us.id)`,[u.id]);
+    return sendJSON(res,200,{ matches:matches.rows, likedMe:likedMe.rows });
+  }
+
+  // ---- Conversations (dernière ligne + non-lus) ----
+  if(url==="/api/conversations" && req.method==="GET"){
+    const u=await userFromAuth(req); if(!u) return sendJSON(res,401,{error:"Non connecté."});
+    const rows=await pool.query(
+      `WITH convo AS (
+         SELECT CASE WHEN from_id=$1 THEN to_id ELSE from_id END AS other, text, created_at, to_id, read_at
+         FROM messages WHERE from_id=$1 OR to_id=$1)
+       SELECT c.other AS id, us.pseudo, us.genre, us.origine, us.photo,
+              (SELECT text FROM convo c2 WHERE c2.other=c.other ORDER BY created_at DESC LIMIT 1) AS last_text,
+              max(c.created_at) AS last_at,
+              count(*) FILTER (WHERE c.to_id=$1 AND c.read_at IS NULL) AS unread
+       FROM convo c JOIN users us ON us.id=c.other
+       WHERE NOT EXISTS(SELECT 1 FROM blocks b WHERE b.blocker_id=$1 AND b.blocked_id=c.other)
+       GROUP BY c.other, us.pseudo, us.genre, us.origine, us.photo
+       ORDER BY last_at DESC`,[u.id]);
+    return sendJSON(res,200,{ conversations:rows.rows });
+  }
+
+  // ---- Fil de messages avec une personne (marque comme lus) ----
+  if(url==="/api/messages" && req.method==="GET"){
+    const u=await userFromAuth(req); if(!u) return sendJSON(res,401,{error:"Non connecté."});
+    const mm=(req.url.split("?")[1]||"").match(/with=(\d+)/); const other=mm?parseInt(mm[1],10):0;
+    if(!other) return sendJSON(res,400,{error:"Paramètre with manquant."});
+    const rows=await pool.query(
+      `SELECT id,from_id,to_id,text,created_at FROM messages
+       WHERE (from_id=$1 AND to_id=$2) OR (from_id=$2 AND to_id=$1) ORDER BY created_at ASC`,[u.id,other]);
+    await pool.query("UPDATE messages SET read_at=now() WHERE to_id=$1 AND from_id=$2 AND read_at IS NULL",[u.id,other]);
+    return sendJSON(res,200,{ messages:rows.rows, meId:u.id });
+  }
+
+  // ---- Envoyer un message (interdit si blocage) ----
+  if(url==="/api/message" && req.method==="POST"){
+    const u=await userFromAuth(req); if(!u) return sendJSON(res,401,{error:"Non connecté."});
+    const b=await readBody(req); const to=parseInt(b.toId,10); const text=(b.text||"").trim();
+    if(!to||to===u.id) return sendJSON(res,400,{error:"Destinataire invalide."});
+    if(!text) return sendJSON(res,400,{error:"Message vide."});
+    const blk=await pool.query("SELECT 1 FROM blocks WHERE (blocker_id=$1 AND blocked_id=$2) OR (blocker_id=$2 AND blocked_id=$1)",[u.id,to]);
+    if(blk.rowCount>0) return sendJSON(res,403,{error:"Impossible : blocage."});
+    const r=await pool.query("INSERT INTO messages(from_id,to_id,text) VALUES($1,$2,$3) RETURNING id,created_at",[u.id,to,text.slice(0,2000)]);
+    return sendJSON(res,200,{ id:r.rows[0].id, created_at:r.rows[0].created_at });
+  }
+
+  // ---- Bloquer / débloquer / liste ----
+  if(url==="/api/block" && req.method==="POST"){
+    const u=await userFromAuth(req); if(!u) return sendJSON(res,401,{error:"Non connecté."});
+    const b=await readBody(req); const id=parseInt(b.id,10); if(!id||id===u.id) return sendJSON(res,400,{error:"Cible invalide."});
+    await pool.query("INSERT INTO blocks(blocker_id,blocked_id) VALUES($1,$2) ON CONFLICT DO NOTHING",[u.id,id]);
+    return sendJSON(res,200,{ ok:true });
+  }
+  if(url==="/api/unblock" && req.method==="POST"){
+    const u=await userFromAuth(req); if(!u) return sendJSON(res,401,{error:"Non connecté."});
+    const b=await readBody(req); const id=parseInt(b.id,10);
+    await pool.query("DELETE FROM blocks WHERE blocker_id=$1 AND blocked_id=$2",[u.id,id]);
+    return sendJSON(res,200,{ ok:true });
+  }
+  if(url==="/api/blocks" && req.method==="GET"){
+    const u=await userFromAuth(req); if(!u) return sendJSON(res,401,{error:"Non connecté."});
+    const rows=await pool.query("SELECT us.id,us.pseudo,us.genre,us.origine,us.photo FROM blocks b JOIN users us ON us.id=b.blocked_id WHERE b.blocker_id=$1",[u.id]);
+    return sendJSON(res,200,{ blocked:rows.rows });
+  }
+
   return sendJSON(res,404,{error:"Route inconnue."});
 }
 
@@ -184,9 +299,12 @@ function compatible(a, b) {
   // ville visée (filtre VIP)
   if (a.villeCible && b.ville && a.villeCible !== b.ville) return false;
   if (b.villeCible && a.ville && b.villeCible !== a.ville) return false;
+  // blocage : on ne se recroise jamais si l'un a bloqué l'autre
+  if (a.blocked && b.uid && a.blocked.indexOf(b.uid) !== -1) return false;
+  if (b.blocked && a.uid && b.blocked.indexOf(a.uid) !== -1) return false;
   return true;
 }
-function publicInfo(u){ return { genre:u.genre, origine:u.origine, pseudo:u.pseudo||"", age:u.age||null, hair:u.hair||null, ville:u.ville||null }; }
+function publicInfo(u){ return { uid:u.uid||null, genre:u.genre, origine:u.origine, pseudo:u.pseudo||"", age:u.age||null, hair:u.hair||null, ville:u.ville||null }; }
 // Cherche un partenaire compatible : les personnes BOOSTÉES passent en priorité
 function findMatchIndex(user){
   for (let i=0;i<waiting.length;i++){ if (waiting[i].boost && compatible(user, waiting[i])) return i; }
@@ -218,10 +336,13 @@ wss.on("connection",(ws)=>{
       user.hair=msg.hair||null; user.hairPref=msg.hairPref||null;
       user.ville=msg.ville||null; user.villeCible=msg.villeCible||null;
       user.boost=!!msg.boost;
+      user.uid=msg.uid||null;            // relie la connexion live au compte
+      user.blocked=Array.isArray(msg.blocked)?msg.blocked:[];   // uids bloqués
       user.pseudo=msg.pseudo||"";
       requeue(user);
     }
     else if(msg.type==="boost"){ user.boost = !!msg.on; }  // active/désactive la priorité
+    else if(msg.type==="blocklist"){ user.blocked = Array.isArray(msg.blocked)?msg.blocked:[]; }  // maj des blocages
     else if(msg.type==="signal"){ if(user.room && user.room.ws.readyState===1) send(user.room.ws,{type:"signal",data:msg.data}); }
     else if(msg.type==="next"){
       if(user.room) user.lastPeerId = user.room.id;   // on retient la personne qu'on quitte

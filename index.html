@@ -441,6 +441,8 @@
   .top-btn{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);color:#fff;
     border-radius:12px;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer;transition:.15s}
   .top-btn:hover{background:rgba(255,255,255,.2)}
+  .ov-top{position:sticky;top:-2px;z-index:6;margin:0 0 10px;display:flex}
+  body.light .ov-top .top-btn{background:rgba(0,0,0,.06);color:#1c1622;border-color:rgba(0,0,0,.15)}
 
   /* Liste de rencontres */
   .clist{display:flex;flex-direction:column;gap:10px}
@@ -769,6 +771,7 @@
 
   <!-- MESSAGERIE (liste des conversations) -->
   <div id="inbox" class="card ov" style="display:none">
+    <div class="ov-top"><button class="top-btn" id="inboxBackTop">← Retour</button></div>
     <h2 style="font-size:24px;margin-bottom:4px">💬 Messages</h2>
     <p style="color:#ffb8cd;font-size:14px;margin-bottom:14px">Toutes tes conversations sont ici 💌 Une fois une discussion ouverte, écrivez-vous <b>autant que vous voulez</b>.</p>
     <div id="threadList" class="clist"></div>
@@ -873,6 +876,7 @@
 
   <!-- MES RENCONTRES -->
   <div id="contacts" class="card ov" style="display:none">
+    <div class="ov-top"><button class="top-btn" id="contactsBackTop">← Retour</button></div>
     <h2 style="font-size:24px;margin-bottom:4px">💌 Mes rencontres</h2>
     <p style="color:#ffb8cd;font-size:14px;margin-bottom:14px">Retrouve tout le monde et écris-leur.</p>
     <h3 style="font-size:16px;color:#7dff9b;margin:10px 0 8px">💖 Vos matchs mutuels</h3>
@@ -2251,6 +2255,8 @@ setInterval(refreshNotifs, 700);
       hair:state.hairMine||null, hairPref:(state.msgUnlimited?state.hairPref:null)||null,
       ville:state.villeMienne||null, villeCible:(state.premium?state.villeCible:null)||null,
       boost:(typeof boostT!=="undefined" && boostT>0),
+      uid:(state.uid||null),
+      blocked:(state.blockedUids||[]),
       pseudo:(state.pseudo||"")
     };
   }
@@ -2321,7 +2327,7 @@ setInterval(refreshNotifs, 700);
     }
     const peer=m.peer||{};
     const nom=(peer.pseudo&&peer.pseudo.trim())?peer.pseudo.trim():"Quelqu'un";
-    partner={ nom, age:peer.age||"", pays:peer.origine||"", g:peer.genre||"", hair:peer.hair||null, ville:peer.ville||null, pid:++pidCounter, real:true };
+    partner={ nom, age:peer.age||"", pays:peer.origine||"", g:peer.genre||"", hair:peer.hair||null, ville:peer.ville||null, uid:peer.uid||null, pid:++pidCounter, real:true };
     iLiked=false; window._partnerLike=false;
     const lb=document.getElementById("likeBtn"); if(lb) lb.style.background="linear-gradient(135deg,var(--rouge),var(--rose))";
     document.getElementById("msgs").innerHTML="";
@@ -2471,6 +2477,7 @@ setInterval(refreshNotifs, 700);
 
   function applyUser(u){
     if(!u) return;
+    state.uid=u.id;
     if(u.pseudo){ state.pseudo=u.pseudo; const pp=document.getElementById("profPseudo"); if(pp) pp.value=u.pseudo; }
     if(u.age){ state.ageMine=u.age; const pa=document.getElementById("profAge"); if(pa) pa.value=u.age; const am=document.getElementById("ageMine"); if(am) am.value=u.age; }
     if(u.genre) state.genre=u.genre;
@@ -2559,6 +2566,129 @@ setInterval(refreshNotifs, 700);
     if(r.ok){ applyUser(r.data.user); showApp(); reparseEmoji&&reparseEmoji(); }
     else setToken("");
   })();
+})();
+
+/* =================================================================
+   COUCHE SOCIALE RÉELLE — rencontres, messagerie, blocage (serveur).
+   ================================================================= */
+(function(){
+  const api = window.sdlApi; if(!api) return;
+  let curUid=null, curName="";
+  const FLAGS2 = (typeof FLAGS!=="undefined") ? FLAGS : {};
+  function tok(){ try{ return !!localStorage.getItem("sdl_token"); }catch(e){ return false; } }
+  function esc(s){ return (s==null?"":""+s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c])); }
+  function avatarFor(r){
+    return (r.photo && (""+r.photo).length>10) ? r.photo
+      : `https://api.dicebear.com/7.x/${r.genre==="femme"?"lorelei":"micah"}/svg?seed=${encodeURIComponent((r.pseudo||"")+(r.id||""))}&backgroundColor=ffd5dc,ffdfbf,d1f4d0`;
+  }
+  function relRow(r, sub){
+    const nom = esc(r.pseudo||"Quelqu'un") + (r.age?(", "+r.age):"");
+    return `<div class="crow"><img src="${avatarFor(r)}"><div class="ci"><b>${nom} ${FLAGS2[r.origine]||""}</b><small>${sub||""}</small></div><button class="cmsg" data-uid="${r.id}" data-name="${esc(r.pseudo||"")}">💬 Message</button></div>`;
+  }
+
+  // ---- Mes rencontres (matchs mutuels + qui t'a mis un cœur) ----
+  async function loadContacts(){
+    const ml=document.getElementById("matchList"), mi=document.getElementById("missedList");
+    const r=await api("/api/relations","GET");
+    if(!r.ok){ if(ml) ml.innerHTML='<div style="color:#8a6672;font-size:13px">Connecte-toi pour voir tes rencontres.</div>'; return; }
+    const M=r.data.matches||[], L=r.data.likedMe||[];
+    if(ml) ml.innerHTML = M.length? M.map(x=>relRow(x,"💖 Match mutuel")).join("") : '<div style="color:#8a6672;font-size:13px;font-style:italic">Aucun match pour le moment.</div>';
+    if(mi) mi.innerHTML = L.length? L.map(x=>relRow(x,"💗 t\'a mis un cœur")).join("") : '<div style="color:#8a6672;font-size:13px;font-style:italic">Personne pour le moment.</div>';
+    document.querySelectorAll("#contacts .cmsg").forEach(b=>b.onclick=()=>openConvo(+b.dataset.uid, b.dataset.name));
+    const cc=document.getElementById("contactsCount"); if(cc) cc.textContent = M.length + L.length;
+  }
+  window.showContacts=function(){ document.getElementById("contacts").style.display="block"; document.getElementById("contacts").scrollTop=0; loadContacts(); reparseEmoji&&reparseEmoji(); };
+  const cbg=document.getElementById("contactsBadge"); if(cbg) cbg.onclick=window.showContacts;
+
+  // ---- Messages : liste des conversations ----
+  async function loadInbox(){
+    const list=document.getElementById("threadList");
+    const r=await api("/api/conversations","GET");
+    const C=(r.ok&&r.data.conversations)||[];
+    if(!C.length){ list.innerHTML='<div style="color:#8a6672;font-size:14px;font-style:italic;padding:14px;text-align:center">Tu n\'as reçu aucun message pour le moment.</div>'; return; }
+    list.innerHTML=C.map(c=>{ const prev=esc((c.last_text||"").slice(0,60));
+      return `<div class="crow thread-row" data-uid="${c.id}" data-name="${esc(c.pseudo||"")}"><img src="${avatarFor(c)}"><div class="ci"><b>${esc(c.pseudo||"")} ${FLAGS2[c.origine]||""}</b><span class="preview">${prev}</span></div>${(+c.unread>0)?'<span class="unread-dot"></span>':''}</div>`;
+    }).join("");
+    list.querySelectorAll(".thread-row").forEach(row=>row.onclick=()=>openConvo(+row.dataset.uid, row.dataset.name));
+  }
+  window.showInbox=function(){ document.getElementById("thread").style.display="none"; document.getElementById("inbox").style.display="block"; document.getElementById("inbox").scrollTop=0; loadInbox(); reparseEmoji&&reparseEmoji(); };
+  const ibg=document.getElementById("inboxBadge"); if(ibg) ibg.onclick=window.showInbox;
+
+  // ---- Fil de conversation (messages réels) ----
+  async function paint(){
+    const box=document.getElementById("threadMsgs");
+    const r=await api("/api/messages?with="+curUid,"GET");
+    if(!r.ok){ box.innerHTML='<div class="msg sys">Impossible de charger la conversation.</div>'; return; }
+    const me=r.data.meId;
+    box.innerHTML=((r.data.messages||[]).map(m=>{ const who=(m.from_id===me)?"me":"them"; const long=(m.text||"").length>180; return `<div class="msg ${who}${long?" clamp":""}">${esc(m.text)}</div>`; }).join("")) || '<div class="msg sys">Écris le premier message 💌</div>';
+    box.scrollTop=box.scrollHeight; reparseEmoji&&reparseEmoji();
+  }
+  async function openConvo(uid, name){
+    curUid=uid; curName=name||"";
+    document.getElementById("threadName").textContent=curName;
+    document.getElementById("contacts").style.display="none";
+    document.getElementById("inbox").style.display="none";
+    document.getElementById("thread").style.display="block";
+    document.getElementById("thread").scrollTop=0;
+    await paint(); refreshBadges();
+  }
+  window.openConvo=openConvo;
+  document.getElementById("threadForm").onsubmit=async(e)=>{
+    e.preventDefault(); const inp=document.getElementById("threadInput");
+    const txt=inp.value.trim(); if(!txt||!curUid) return; inp.value="";
+    const r=await api("/api/message","POST",{toId:curUid,text:txt});
+    if(!r.ok){ alert(r.data.error||"Envoi impossible."); return; }
+    await paint();
+  };
+  document.getElementById("threadBack").onclick=()=>{ document.getElementById("thread").style.display="none"; window.showInbox(); };
+
+  // ---- Blocage réel ----
+  document.getElementById("threadBlock").onclick=async()=>{
+    if(!curUid) return;
+    if(!confirm("Bloquer cette personne ? Vous ne pourrez plus vous écrire ni vous recroiser en live.")) return;
+    await api("/api/block","POST",{id:curUid});
+    await loadBlockedUids();   // ← met à jour la liste envoyée au live
+    document.getElementById("thread").style.display="none"; window.showInbox(); refreshBadges();
+  };
+  async function renderBlocked(){
+    const list=document.getElementById("blockedList"); if(!list) return;
+    const r=await api("/api/blocks","GET"); const B=(r.ok&&r.data.blocked)||[];
+    if(!B.length){ list.innerHTML='<div style="color:#8a6672;font-size:13px;font-style:italic">Personne de bloqué.</div>'; return; }
+    list.innerHTML=B.map(x=>`<div class="crow"><img src="${avatarFor(x)}"><div class="ci"><b>${esc(x.pseudo||"")}</b></div><button class="cmsg" data-uid="${x.id}">Débloquer</button></div>`).join("");
+    list.querySelectorAll(".cmsg").forEach(b=>b.onclick=async()=>{ await api("/api/unblock","POST",{id:+b.dataset.uid}); await loadBlockedUids(); renderBlocked(); refreshBadges(); });
+    reparseEmoji&&reparseEmoji();
+  }
+  // Charge la liste des personnes bloquées et la transmet au matchmaking (pour ne plus les recroiser)
+  async function loadBlockedUids(){
+    if(!tok()) return;
+    const r=await api("/api/blocks","GET");
+    if(r.ok){ state.blockedUids=(r.data.blocked||[]).map(x=>x.id); if(window.sdlWS) window.sdlWS({type:"blocklist", blocked:state.blockedUids}); }
+  }
+  window.sdlLoadBlocked=loadBlockedUids;
+  // Boutons « Retour » en haut des écrans
+  const cbt=document.getElementById("contactsBackTop"); if(cbt) cbt.onclick=()=>{ document.getElementById("contacts").style.display="none"; };
+  const ibt=document.getElementById("inboxBackTop"); if(ibt) ibt.onclick=()=>{ document.getElementById("inbox").style.display="none"; };
+  window.renderBlocked=renderBlocked;
+  const sbk=document.getElementById("set-blocked"); if(sbk){ const prev=sbk.onclick; sbk.onclick=(e)=>{ if(typeof prev==="function") prev.call(sbk,e); renderBlocked(); }; }
+
+  // ---- Coup de cœur enregistré sur le serveur (persiste même si l'autre part) ----
+  const lbtn=document.getElementById("likeBtn");
+  if(lbtn){ const prevLike=lbtn.onclick;
+    lbtn.onclick=function(ev){ if(typeof prevLike==="function") prevLike.call(this,ev);
+      if(typeof partner!=="undefined" && partner && partner.uid && tok()) api("/api/like","POST",{otherId:partner.uid}); };
+  }
+
+  // ---- Compteurs des badges (rencontres + messages non lus) ----
+  async function refreshBadges(){
+    if(!tok()) return;
+    const rel=await api("/api/relations","GET");
+    if(rel.ok){ const n=(rel.data.matches||[]).length+(rel.data.likedMe||[]).length; const cc=document.getElementById("contactsCount"); if(cc) cc.textContent=n; }
+    const cv=await api("/api/conversations","GET");
+    if(cv.ok){ const unread=(cv.data.conversations||[]).reduce((s,c)=>s+(+c.unread||0),0); const ic=document.getElementById("inboxCount"); if(ic) ic.textContent=unread; }
+  }
+  window.sdlRefreshBadges=refreshBadges;
+  setInterval(()=>{ refreshBadges(); }, 20000);
+  setTimeout(()=>{ refreshBadges(); loadBlockedUids(); }, 3500);
 })();
 </script>
 </body>
