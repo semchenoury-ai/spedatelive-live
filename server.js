@@ -12,6 +12,18 @@ const PORT = process.env.PORT || 3000;
 const PUB = __dirname;
 const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(32).toString("hex");
 
+// --- Stripe (paiements) ---
+const stripe = process.env.STRIPE_SECRET_KEY ? require("stripe")(process.env.STRIPE_SECRET_KEY) : null;
+// Catalogue produits : nom, prix en centimes, effet sur le portefeuille
+const PRODUCTS = {
+  jetons5:  { name:"5 jetons SpeeDateLive",  amount:299, tokens:5 },
+  jetons10: { name:"10 jetons SpeeDateLive", amount:399, tokens:10 },
+  boost5:   { name:"Boost 5 minutes",        amount:199, boost:5 },
+  boost25:  { name:"Boost 25 minutes",       amount:399, boost:25 },
+  ville:    { name:"Débloquer la ville",     amount:199, premium:true },
+  vip:      { name:"Pack VIP SpeeDateLive",  amount:799, vip:true, premium:true, tokens:20, boost:25 }
+};
+
 // --- Base de données (Neon PostgreSQL) ---
 const hasDB = !!process.env.DATABASE_URL;
 const pool = hasDB ? new Pool({
@@ -35,6 +47,19 @@ async function initDB() {
       origine  TEXT,
       cible    TEXT,
       settings JSONB DEFAULT '{}'::jsonb,
+      created_at TIMESTAMPTZ DEFAULT now()
+    );`);
+  // Portefeuille (jetons / VIP / boost) — ajout de colonnes si absentes
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS tokens INT DEFAULT 3;`);
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS premium BOOLEAN DEFAULT false;`);
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS vip BOOLEAN DEFAULT false;`);
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS free_boost INT DEFAULT 0;`);
+  // Achats payés (idempotence : on ne crédite qu'une fois par session Stripe)
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS purchases (
+      session_id TEXT PRIMARY KEY,
+      user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      product TEXT NOT NULL,
       created_at TIMESTAMPTZ DEFAULT now()
     );`);
   // Coups de cœur (un like par sens). Match mutuel = deux likes croisés.
@@ -71,7 +96,20 @@ async function initDB() {
 function publicUser(u) {
   if (!u) return null;
   return { id:u.id, pseudo:u.pseudo, email:u.email, age:u.age, photo:u.photo,
-           genre:u.genre, pref:u.pref, origine:u.origine, cible:u.cible, settings:u.settings||{} };
+           genre:u.genre, pref:u.pref, origine:u.origine, cible:u.cible, settings:u.settings||{},
+           tokens:(u.tokens==null?3:u.tokens), premium:!!u.premium, vip:!!u.vip, free_boost:u.free_boost||0 };
+}
+// Applique un produit acheté au portefeuille de l'utilisateur (en base)
+async function applyProduct(uid, product){
+  const p = PRODUCTS[product]; if(!p) return;
+  const sets=[]; const vals=[]; let i=1;
+  if(p.tokens){ sets.push("tokens=COALESCE(tokens,3)+$"+(i++)); vals.push(p.tokens); }
+  if(p.boost){ sets.push("free_boost=COALESCE(free_boost,0)+$"+(i++)); vals.push(p.boost); }
+  if(p.premium){ sets.push("premium=true"); }
+  if(p.vip){ sets.push("vip=true"); }
+  if(!sets.length) return;
+  vals.push(uid);
+  await pool.query("UPDATE users SET "+sets.join(",")+" WHERE id=$"+i, vals);
 }
 function makeToken(u){ return jwt.sign({ uid:u.id }, JWT_SECRET, { expiresIn:"60d" }); }
 
@@ -246,6 +284,63 @@ async function handleAPI(req, res, url){
     const u=await userFromAuth(req); if(!u) return sendJSON(res,401,{error:"Non connecté."});
     const rows=await pool.query("SELECT us.id,us.pseudo,us.genre,us.origine,us.photo FROM blocks b JOIN users us ON us.id=b.blocked_id WHERE b.blocker_id=$1",[u.id]);
     return sendJSON(res,200,{ blocked:rows.rows });
+  }
+
+  // ---- Portefeuille (jetons/VIP/boost) : charger / sauvegarder ----
+  if(url==="/api/wallet" && req.method==="GET"){
+    const u=await userFromAuth(req); if(!u) return sendJSON(res,401,{error:"Non connecté."});
+    return sendJSON(res,200,{ tokens:(u.tokens==null?3:u.tokens), premium:!!u.premium, vip:!!u.vip, free_boost:u.free_boost||0 });
+  }
+  if(url==="/api/wallet" && req.method==="POST"){
+    // sauvegarde la DÉPENSE côté compte (jetons dépensés, boost activé…) pour la persistance multi-appareils
+    const u=await userFromAuth(req); if(!u) return sendJSON(res,401,{error:"Non connecté."});
+    const b=await readBody(req);
+    const sets=[], vals=[]; let i=1;
+    if(typeof b.tokens==="number"){ sets.push("tokens=$"+(i++)); vals.push(Math.max(0,Math.floor(b.tokens))); }
+    if(typeof b.free_boost==="number"){ sets.push("free_boost=$"+(i++)); vals.push(Math.max(0,Math.floor(b.free_boost))); }
+    if(!sets.length) return sendJSON(res,200,{ ok:true });
+    vals.push(u.id);
+    await pool.query("UPDATE users SET "+sets.join(",")+" WHERE id=$"+i, vals);
+    return sendJSON(res,200,{ ok:true });
+  }
+
+  // ---- Créer une session de paiement Stripe ----
+  if(url==="/api/checkout" && req.method==="POST"){
+    if(!stripe) return sendJSON(res,503,{error:"Paiement non configuré (clé Stripe manquante)."});
+    const u=await userFromAuth(req); if(!u) return sendJSON(res,401,{error:"Non connecté."});
+    const b=await readBody(req); const product=b.product; const P=PRODUCTS[product];
+    if(!P) return sendJSON(res,400,{error:"Produit inconnu."});
+    const base = (req.headers["x-forwarded-proto"]||"https")+"://"+req.headers.host;
+    try{
+      const session=await stripe.checkout.sessions.create({
+        mode:"payment",
+        line_items:[{ price_data:{ currency:"eur", product_data:{name:P.name}, unit_amount:P.amount }, quantity:1 }],
+        success_url: base+"/?paid="+product+"&session_id={CHECKOUT_SESSION_ID}",
+        cancel_url: base+"/?canceled=1",
+        client_reference_id:String(u.id),
+        metadata:{ uid:String(u.id), product }
+      });
+      return sendJSON(res,200,{ url:session.url });
+    }catch(e){ console.error("stripe:",e.message); return sendJSON(res,500,{error:"Erreur paiement."}); }
+  }
+
+  // ---- Confirmer un paiement (au retour de Stripe) et créditer une seule fois ----
+  if(url==="/api/checkout/confirm" && req.method==="GET"){
+    if(!stripe) return sendJSON(res,503,{error:"Paiement non configuré."});
+    const u=await userFromAuth(req); if(!u) return sendJSON(res,401,{error:"Non connecté."});
+    const mm=(req.url.split("?")[1]||"").match(/session_id=([^&]+)/); const sid=mm?decodeURIComponent(mm[1]):"";
+    if(!sid) return sendJSON(res,400,{error:"session_id manquant."});
+    try{
+      const s=await stripe.checkout.sessions.retrieve(sid);
+      if(s.payment_status!=="paid") return sendJSON(res,200,{ paid:false });
+      const uid=parseInt(s.metadata&&s.metadata.uid,10); const product=s.metadata&&s.metadata.product;
+      if(uid!==u.id) return sendJSON(res,403,{error:"Session non reconnue."});
+      const ins=await pool.query("INSERT INTO purchases(session_id,user_id,product) VALUES($1,$2,$3) ON CONFLICT(session_id) DO NOTHING RETURNING 1",[sid,u.id,product]);
+      if(ins.rowCount>0){ await applyProduct(u.id, product); }
+      const r=await pool.query("SELECT tokens,premium,vip,free_boost FROM users WHERE id=$1",[u.id]);
+      const w=r.rows[0];
+      return sendJSON(res,200,{ paid:true, product, wallet:{ tokens:w.tokens, premium:w.premium, vip:w.vip, free_boost:w.free_boost } });
+    }catch(e){ console.error("confirm:",e.message); return sendJSON(res,500,{error:"Erreur de confirmation."}); }
   }
 
   return sendJSON(res,404,{error:"Route inconnue."});

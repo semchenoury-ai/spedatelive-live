@@ -1,14 +1,15 @@
 {
   "name": "spedatelive-live",
-  "version": "1.1.0",
-  "description": "SpeeDateLive - vrai matchmaking video en direct + comptes reels",
+  "version": "1.2.0",
+  "description": "SpeeDateLive - vrai matchmaking video en direct + comptes reels + paiements Stripe",
   "main": "server.js",
   "scripts": { "start": "node server.js" },
   "dependencies": {
     "ws": "^8.18.0",
     "pg": "^8.12.0",
     "bcryptjs": "^2.4.3",
-    "jsonwebtoken": "^9.0.2"
+    "jsonwebtoken": "^9.0.2",
+    "stripe": "^16.12.0"
   },
   "engines": { "node": ">=18" }
 }

@@ -2485,6 +2485,7 @@ setInterval(refreshNotifs, 700);
     if(u.origine) state.origine=u.origine;
     if(u.cible) state.cible=u.cible;
     if(u.photo && typeof applyPhoto==="function") applyPhoto(u.photo);
+    if(window.sdlApplyWallet) window.sdlApplyWallet({tokens:u.tokens, premium:u.premium, vip:u.vip, free_boost:u.free_boost});
     try{ localStorage.setItem("sdl_user",JSON.stringify({pseudo:u.pseudo,email:u.email})); }catch(e){}
   }
   function showApp(){ document.getElementById("account").style.display="none"; document.getElementById("intro").style.display="block"; }
@@ -2689,6 +2690,62 @@ setInterval(refreshNotifs, 700);
   window.sdlRefreshBadges=refreshBadges;
   setInterval(()=>{ refreshBadges(); }, 20000);
   setTimeout(()=>{ refreshBadges(); loadBlockedUids(); }, 3500);
+})();
+
+/* =================================================================
+   PAIEMENTS RÉELS — Stripe Checkout (jetons, Boost, VIP, ville).
+   ================================================================= */
+(function(){
+  const api=window.sdlApi; if(!api) return;
+  function tok(){ try{ return !!localStorage.getItem("sdl_token"); }catch(e){ return false; } }
+
+  // Applique le portefeuille (venu du compte ou d'un paiement) à l'état + à l'UI
+  function apply(w){
+    if(!w) return;
+    if(typeof w.tokens==="number"){ state.tokens=w.tokens; if(typeof updateTokens==="function") updateTokens(); }
+    if(w.premium){ state.premium=true; const vl=document.getElementById("villeLock"); if(vl) vl.style.display="none"; const vc=document.getElementById("villeCible"); if(vc) vc.style.display="block"; if(typeof fillTargetCity==="function") fillTargetCity(); }
+    if(w.vip){ state.msgUnlimited=true; const vb=document.getElementById("vipBadge"); if(vb) vb.classList.add("active"); const vs=document.getElementById("vipState"); if(vs) vs.textContent="VIP ✓"; const vp=document.getElementById("vipPct"); if(vp) vp.style.display="none"; if(typeof unlockVipFilters==="function") unlockVipFilters(); }
+    if(typeof w.free_boost==="number"){ state.freeBoost=w.free_boost; if(w.free_boost>0){ const bb=document.getElementById("boostBadge"); if(bb) bb.classList.add("has-credit"); } }
+    if(typeof refreshNotifs==="function") refreshNotifs();
+  }
+  window.sdlApplyWallet=apply;
+
+  // Lance un paiement Stripe : on redirige vers le formulaire sécurisé de Stripe
+  async function checkout(product){
+    if(!tok()){ alert("Crée ton compte ou connecte-toi pour acheter."); return; }
+    const r=await api("/api/checkout","POST",{product});
+    if(r.ok && r.data.url){ window.location.href=r.data.url; }
+    else { alert(r.data.error || "Le paiement n'est pas encore activé."); }
+  }
+  window.sdlCheckout=checkout;
+
+  // Brancher les boutons « Payer » sur Stripe
+  const pv=document.getElementById("payBtn"); if(pv) pv.onclick=()=>checkout("ville");
+  const pp=document.getElementById("payPackBtn"); if(pp) pp.onclick=()=>checkout("vip");
+  document.querySelectorAll(".token-opt").forEach(b=>{ b.onclick=()=>checkout(b.dataset.tokens==="10"?"jetons10":"jetons5"); });
+  document.querySelectorAll(".boost-opt[data-min]").forEach(b=>{ b.onclick=()=>checkout(b.dataset.min==="25"?"boost25":"boost5"); });
+
+  // Sauvegarde des DÉPENSES sur le compte (persistance multi-appareils)
+  let saveT=null;
+  function scheduleSave(){ if(!tok()) return; clearTimeout(saveT); saveT=setTimeout(()=>{ api("/api/wallet","POST",{tokens:state.tokens||0, free_boost:state.freeBoost||0}); }, 1200); }
+  const _ut=window.updateTokens;
+  window.updateTokens=function(){ if(typeof _ut==="function") _ut.apply(this,arguments); scheduleSave(); };
+  setInterval(()=>{ if(tok()) api("/api/wallet","POST",{tokens:state.tokens||0, free_boost:state.freeBoost||0}); }, 15000);
+
+  async function loadWallet(){ if(!tok()) return; const r=await api("/api/wallet","GET"); if(r.ok) apply(r.data); }
+
+  // Au retour de Stripe : confirmer le paiement et créditer
+  (async()=>{
+    const q=new URLSearchParams(location.search);
+    if(q.get("paid") && q.get("session_id")){
+      let n=0; while(!tok() && n<25){ await new Promise(r=>setTimeout(r,200)); n++; }
+      const r=await api("/api/checkout/confirm?session_id="+encodeURIComponent(q.get("session_id")),"GET");
+      if(r.ok && r.data.paid){ apply(r.data.wallet); const li=document.getElementById("liveInfo"); if(li) li.textContent="✅ Paiement réussi, ton achat est crédité !"; alert("✅ Paiement réussi ! Ton achat a été crédité sur ton compte."); }
+      try{ history.replaceState({}, "", location.pathname); }catch(e){}
+    } else {
+      setTimeout(loadWallet, 1800);
+    }
+  })();
 })();
 </script>
 </body>
