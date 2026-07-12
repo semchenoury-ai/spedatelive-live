@@ -12,6 +12,25 @@ const PORT = process.env.PORT || 3000;
 const PUB = __dirname;
 const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(32).toString("hex");
 
+// --- Google Sign-In ---
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "";
+let googleClient = null;
+if (GOOGLE_CLIENT_ID) { try { const { OAuth2Client } = require("google-auth-library"); googleClient = new OAuth2Client(GOOGLE_CLIENT_ID); } catch(e){ console.warn("google-auth-library indisponible"); } }
+
+// --- E-mail (Brevo) pour le « mot de passe oublié » ---
+const BREVO_API_KEY = process.env.BREVO_API_KEY || "";
+const SENDER_EMAIL = process.env.SENDER_EMAIL || "";
+const SENDER_NAME = process.env.SENDER_NAME || "SpeeDateLive";
+async function sendEmail(to, subject, html){
+  if(!BREVO_API_KEY || !SENDER_EMAIL) throw new Error("Service e-mail non configuré");
+  const r = await fetch("https://api.brevo.com/v3/smtp/email", {
+    method:"POST",
+    headers:{ "api-key":BREVO_API_KEY, "Content-Type":"application/json", "accept":"application/json" },
+    body: JSON.stringify({ sender:{ name:SENDER_NAME, email:SENDER_EMAIL }, to:[{email:to}], subject, htmlContent:html })
+  });
+  if(!r.ok){ const t=await r.text(); throw new Error("Brevo: "+r.status+" "+t); }
+}
+
 // --- Stripe (paiements) ---
 const stripe = process.env.STRIPE_SECRET_KEY ? require("stripe")(process.env.STRIPE_SECRET_KEY) : null;
 // Catalogue produits : nom, prix en centimes, effet sur le portefeuille
@@ -57,6 +76,16 @@ async function initDB() {
   // Modération : consentement 18+ et suspension de compte
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS agree18 BOOLEAN DEFAULT false;`);
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS banned BOOLEAN DEFAULT false;`);
+  // Connexion Google + mot de passe oublié
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS google_id TEXT;`);
+  await pool.query(`ALTER TABLE users ALTER COLUMN pass_hash DROP NOT NULL;`).catch(()=>{});
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS password_resets (
+      token_hash TEXT PRIMARY KEY,
+      user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      expires_at TIMESTAMPTZ NOT NULL,
+      created_at TIMESTAMPTZ DEFAULT now()
+    );`);
   // Signalements
   await pool.query(`
     CREATE TABLE IF NOT EXISTS reports (
@@ -178,6 +207,34 @@ async function handleAPI(req, res, url){
     const ok=await bcrypt.compare(password, u.pass_hash);
     if(!ok) return sendJSON(res,401,{error:"E-mail ou mot de passe incorrect."});
     if(u.banned) return sendJSON(res,403,{error:"Ce compte a été suspendu pour non-respect des règles."});
+    if(!u.pass_hash) return sendJSON(res,403,{error:"Ce compte utilise « Continuer avec Google ». Connecte-toi avec Google."});
+    return sendJSON(res,200,{ token:makeToken(u), user:publicUser(u) });
+  }
+
+  // Config publique (pour activer les boutons côté client)
+  if(url==="/api/config" && req.method==="GET"){
+    return sendJSON(res,200,{ googleClientId: GOOGLE_CLIENT_ID || null, emailEnabled: !!(BREVO_API_KEY && SENDER_EMAIL) });
+  }
+
+  // Connexion / inscription via Google
+  if(url==="/api/auth/google" && req.method==="POST"){
+    if(!googleClient) return sendJSON(res,503,{error:"Connexion Google non configurée."});
+    const b=await readBody(req); const cred=b.credential;
+    if(!cred) return sendJSON(res,400,{error:"Jeton Google manquant."});
+    let payload;
+    try{ const ticket=await googleClient.verifyIdToken({ idToken:cred, audience:GOOGLE_CLIENT_ID }); payload=ticket.getPayload(); }
+    catch(e){ return sendJSON(res,401,{error:"Jeton Google invalide."}); }
+    const gid=payload.sub, email=(payload.email||"").toLowerCase(), name=payload.name||payload.given_name||"";
+    if(!email) return sendJSON(res,400,{error:"Impossible de récupérer l'e-mail Google."});
+    let r=await pool.query("SELECT * FROM users WHERE google_id=$1 OR email=$2 LIMIT 1",[gid,email]);
+    let u=r.rows[0];
+    if(u){
+      if(u.banned) return sendJSON(res,403,{error:"Ce compte a été suspendu."});
+      if(!u.google_id) await pool.query("UPDATE users SET google_id=$1 WHERE id=$2",[gid,u.id]);  // lie Google à un compte existant
+    } else {
+      const ins=await pool.query("INSERT INTO users(pseudo,email,google_id,agree18) VALUES($1,$2,$3,true) RETURNING *",[name||"Membre",email,gid]);
+      u=ins.rows[0];
+    }
     return sendJSON(res,200,{ token:makeToken(u), user:publicUser(u) });
   }
 
@@ -210,6 +267,44 @@ async function handleAPI(req, res, url){
     if((b.password||"").length<6) return sendJSON(res,400,{error:"Au moins 6 caractères."});
     const hash=await bcrypt.hash(b.password,10);
     await pool.query("UPDATE users SET pass_hash=$1 WHERE id=$2",[hash,u.id]);
+    return sendJSON(res,200,{ ok:true });
+  }
+
+  // Mot de passe oublié : envoie un lien de réinitialisation par e-mail
+  if(url==="/api/forgot" && req.method==="POST"){
+    const b=await readBody(req); const email=(b.email||"").trim().toLowerCase();
+    // on répond toujours OK (on ne révèle pas si l'e-mail existe)
+    if(!validEmail(email)) return sendJSON(res,200,{ ok:true });
+    try{
+      const r=await pool.query("SELECT * FROM users WHERE email=$1",[email]); const u=r.rows[0];
+      if(u && u.pass_hash){   // pas de reset pour les comptes Google (pas de mot de passe)
+        const token=crypto.randomBytes(32).toString("hex");
+        const tokenHash=crypto.createHash("sha256").update(token).digest("hex");
+        await pool.query("DELETE FROM password_resets WHERE user_id=$1",[u.id]);
+        await pool.query("INSERT INTO password_resets(token_hash,user_id,expires_at) VALUES($1,$2, now()+interval '1 hour')",[tokenHash,u.id]);
+        const base=(req.headers["x-forwarded-proto"]||"https")+"://"+req.headers.host;
+        const link=base+"/?reset="+token;
+        await sendEmail(email, "Réinitialise ton mot de passe SpeeDateLive",
+          `<div style="font-family:sans-serif"><h2>Mot de passe oublié ?</h2>
+           <p>Clique sur le lien ci-dessous pour choisir un nouveau mot de passe (valable 1 heure) :</p>
+           <p><a href="${link}" style="background:#e60043;color:#fff;padding:12px 20px;border-radius:10px;text-decoration:none;font-weight:bold">Réinitialiser mon mot de passe</a></p>
+           <p style="color:#888;font-size:12px">Si tu n'es pas à l'origine de cette demande, ignore cet e-mail.</p></div>`);
+      }
+    }catch(e){ console.error("forgot:",e.message); }
+    return sendJSON(res,200,{ ok:true });
+  }
+
+  // Réinitialiser le mot de passe avec le token reçu par e-mail
+  if(url==="/api/reset" && req.method==="POST"){
+    const b=await readBody(req); const token=b.token||""; const password=b.password||"";
+    if(password.length<6) return sendJSON(res,400,{error:"Mot de passe : au moins 6 caractères."});
+    const tokenHash=crypto.createHash("sha256").update(token).digest("hex");
+    const r=await pool.query("SELECT * FROM password_resets WHERE token_hash=$1 AND expires_at > now()",[tokenHash]);
+    const row=r.rows[0];
+    if(!row) return sendJSON(res,400,{error:"Lien invalide ou expiré. Refais une demande."});
+    const hash=await bcrypt.hash(password,10);
+    await pool.query("UPDATE users SET pass_hash=$1 WHERE id=$2",[hash,row.user_id]);
+    await pool.query("DELETE FROM password_resets WHERE user_id=$1",[row.user_id]);
     return sendJSON(res,200,{ ok:true });
   }
 

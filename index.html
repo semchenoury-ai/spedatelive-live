@@ -659,6 +659,9 @@
     <h2 style="font-size:26px;margin-bottom:4px">Créer ton compte</h2>
     <p style="color:#ffb8cd;font-size:14px;margin-bottom:6px">Rejoins SpeeDateLive et commence à faire des rencontres en live 💘</p>
 
+    <div id="googleBtnWrap" style="display:none;justify-content:center;margin:6px 0"></div>
+    <div id="orSep" style="display:none;text-align:center;color:#ffb8cd;font-size:12px;margin:6px 0 2px">— ou avec ton e-mail —</div>
+
     <div id="signupForm">
       <label class="q">Pseudo</label>
       <input type="text" id="acPseudo" class="field" placeholder="Ton pseudo">
@@ -681,7 +684,18 @@
       <label class="q">Mot de passe</label>
       <input type="password" id="lgPass" class="field" placeholder="••••••••">
       <button class="btn" id="lgBtn">Se connecter 💫</button>
-      <p style="text-align:center;color:#ffb8cd;font-size:13px;margin-top:12px">Pas encore de compte ? <a href="#" id="goSignup" style="color:#fff;font-weight:700">Créer un compte</a></p>
+      <p style="text-align:center;margin-top:10px"><a href="#" id="forgotLink" style="color:#ffb8cd;font-size:13px;text-decoration:underline">Mot de passe oublié ?</a></p>
+      <p style="text-align:center;color:#ffb8cd;font-size:13px;margin-top:6px">Pas encore de compte ? <a href="#" id="goSignup" style="color:#fff;font-weight:700">Créer un compte</a></p>
+    </div>
+
+    <div id="forgotForm" style="display:none">
+      <h3 style="font-size:18px;margin-bottom:4px">Mot de passe oublié</h3>
+      <p style="color:#ffb8cd;font-size:13px;margin-bottom:8px">Entre ton e-mail, on t'envoie un lien pour en choisir un nouveau.</p>
+      <label class="q">Adresse e-mail</label>
+      <input type="email" id="fgEmail" class="field" placeholder="ton@email.com">
+      <button class="btn" id="fgBtn">📩 Recevoir le lien</button>
+      <p id="fgNote" class="sub-note"></p>
+      <p style="text-align:center;margin-top:6px"><a href="#" id="fgBack" style="color:#fff;font-size:13px">← Retour à la connexion</a></p>
     </div>
     <small class="legal">🔒 Ton compte est enregistré en toute sécurité : reconnecte-toi depuis n'importe quel appareil. Mot de passe chiffré.</small>
   </div>
@@ -1015,6 +1029,17 @@
       <button id="quitNo" class="btn cancel" style="flex:1">Non, rester</button>
       <button id="quitYes" class="btn pay" style="flex:1">Oui, quitter</button>
     </div>
+  </div>
+</div>
+
+<!-- RÉINITIALISATION DU MOT DE PASSE (via lien e-mail) -->
+<div id="resetModal" style="display:none;position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.8);align-items:center;justify-content:center;padding:20px">
+  <div style="max-width:360px;width:100%;background:linear-gradient(160deg,#2a0512,#160409);border:1px solid rgba(255,255,255,.14);border-radius:18px;box-shadow:0 14px 44px rgba(0,0,0,.65);padding:24px">
+    <h3 style="margin:0 0 6px;font-size:20px">🔑 Nouveau mot de passe</h3>
+    <p style="color:#ffb8cd;font-size:13px;margin-bottom:12px">Choisis ton nouveau mot de passe.</p>
+    <input type="password" id="rsPass" class="field" placeholder="Nouveau mot de passe (6+ caractères)">
+    <button class="btn" id="rsBtn" style="margin-top:10px">Valider</button>
+    <p id="rsNote" class="sub-note"></p>
   </div>
 </div>
 
@@ -2537,6 +2562,7 @@ setInterval(refreshNotifs, 700);
     try{ localStorage.setItem("sdl_user",JSON.stringify({pseudo:u.pseudo,email:u.email})); }catch(e){}
   }
   function showApp(){ document.getElementById("account").style.display="none"; document.getElementById("intro").style.display="block"; }
+  window.sdlApplyUser=applyUser; window.sdlShowApp=showApp; window.sdlSetToken=setToken;
 
   // Inscription
   document.getElementById("acCreate").onclick=async()=>{
@@ -2818,6 +2844,76 @@ setInterval(refreshNotifs, 700);
     if(typeof window.sdlLoadBlocked==="function") setTimeout(window.sdlLoadBlocked, 300);
     setTimeout(()=>{ if(typeof nextPartner==="function") nextPartner(); }, 1000);
   };
+})();
+
+/* =================================================================
+   CONNEXION GOOGLE + MOT DE PASSE OUBLIÉ
+   ================================================================= */
+(function(){
+  const api=window.sdlApi; if(!api) return;
+  function finishLogin(data){
+    if(window.sdlSetToken) window.sdlSetToken(data.token);
+    if(window.sdlApplyUser) window.sdlApplyUser(data.user);
+    if(window.sdlShowApp) window.sdlShowApp();
+    if(typeof reparseEmoji==="function") reparseEmoji();
+  }
+  // Callback appelé par Google après connexion
+  window.handleGoogleCredential = async (resp)=>{
+    const r=await api("/api/auth/google","POST",{credential:resp.credential});
+    if(r.ok) finishLogin(r.data); else alert((r.data&&r.data.error)||"Connexion Google impossible.");
+  };
+
+  // Charge la config publique → active Google + « mot de passe oublié » si dispo
+  (async()=>{
+    let cfg={}; try{ const c=await api("/api/config","GET"); cfg=c.data||{}; }catch(e){}
+    if(cfg.googleClientId){
+      const s=document.createElement("script"); s.src="https://accounts.google.com/gsi/client"; s.async=true; s.defer=true;
+      s.onload=()=>{ try{
+        google.accounts.id.initialize({ client_id:cfg.googleClientId, callback:window.handleGoogleCredential });
+        const wrap=document.getElementById("googleBtnWrap");
+        google.accounts.id.renderButton(wrap,{ theme:"filled_black", size:"large", text:"continue_with", shape:"pill", locale:"fr" });
+        wrap.style.display="flex";
+        const sep=document.getElementById("orSep"); if(sep) sep.style.display="block";
+      }catch(e){} };
+      document.head.appendChild(s);
+    }
+    if(!cfg.emailEnabled){ const fl=document.getElementById("forgotLink"); if(fl) fl.style.display="none"; }
+  })();
+
+  // Mot de passe oublié
+  const forgotLink=document.getElementById("forgotLink");
+  if(forgotLink) forgotLink.onclick=(e)=>{ e.preventDefault();
+    document.getElementById("signupForm").style.display="none";
+    document.getElementById("loginForm").style.display="none";
+    document.getElementById("forgotForm").style.display="block"; };
+  const fgBack=document.getElementById("fgBack");
+  if(fgBack) fgBack.onclick=(e)=>{ e.preventDefault();
+    document.getElementById("forgotForm").style.display="none";
+    document.getElementById("loginForm").style.display="block"; };
+  const fgBtn=document.getElementById("fgBtn");
+  if(fgBtn) fgBtn.onclick=async()=>{
+    const em=document.getElementById("fgEmail").value.trim(); const n=document.getElementById("fgNote");
+    if(!em.includes("@")){ n.style.color="#ff7a94"; n.textContent="Entre une adresse e-mail valide."; return; }
+    const b=document.getElementById("fgBtn"); b.disabled=true; b.textContent="… envoi";
+    await api("/api/forgot","POST",{email:em});
+    b.disabled=false; b.textContent="📩 Recevoir le lien";
+    n.style.color="#7dff9b"; n.textContent="Si un compte existe avec cet e-mail, un lien vient d'être envoyé. Regarde ta boîte mail (et les spams) 📩";
+  };
+
+  // Réinitialisation via le lien reçu par e-mail (?reset=token)
+  const q=new URLSearchParams(location.search); const token=q.get("reset");
+  if(token){
+    const m=document.getElementById("resetModal"); if(m) m.style.display="flex";
+    const rsBtn=document.getElementById("rsBtn");
+    if(rsBtn) rsBtn.onclick=async()=>{
+      const pw=document.getElementById("rsPass").value; const n=document.getElementById("rsNote");
+      if(pw.length<6){ n.style.color="#ff7a94"; n.textContent="Au moins 6 caractères."; return; }
+      const r=await api("/api/reset","POST",{token, password:pw});
+      if(r.ok){ n.style.color="#7dff9b"; n.textContent="✅ Mot de passe mis à jour ! Connecte-toi.";
+        setTimeout(()=>{ try{history.replaceState({},"",location.pathname);}catch(e){} document.getElementById("resetModal").style.display="none"; },1600); }
+      else { n.style.color="#ff7a94"; n.textContent=(r.data&&r.data.error)||"Erreur."; }
+    };
+  }
 })();
 </script>
 </body>
