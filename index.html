@@ -642,6 +642,10 @@
       <input type="email" id="acEmail" class="field" placeholder="ton@email.com">
       <label class="q">Mot de passe</label>
       <input type="password" id="acPass" class="field" placeholder="••••••••">
+      <label style="display:flex;gap:8px;align-items:flex-start;margin:12px 0 4px;font-size:13px;color:#ffd0dc;cursor:pointer">
+        <input type="checkbox" id="acAgree" style="margin-top:3px;flex:none;width:18px;height:18px">
+        <span>Je certifie avoir <b>18 ans ou plus</b> et j'accepte les <a href="#" id="showRules" style="color:#fff;text-decoration:underline">règles de la communauté</a>.</span>
+      </label>
       <div id="acWarn" style="display:none;color:#ff7a94;font-size:12px;margin-top:6px"></div>
       <button class="btn" id="acCreate">Créer mon compte 💖</button>
       <p style="text-align:center;color:#ffb8cd;font-size:13px;margin-top:12px">Déjà inscrit ? <a href="#" id="goLogin" style="color:#fff;font-weight:700">Se connecter</a></p>
@@ -987,6 +991,23 @@
       <button id="quitNo" class="btn cancel" style="flex:1">Non, rester</button>
       <button id="quitYes" class="btn pay" style="flex:1">Oui, quitter</button>
     </div>
+  </div>
+</div>
+
+<!-- RÈGLES / CONDITIONS -->
+<div id="rulesModal" style="display:none;position:fixed;inset:0;z-index:75;background:rgba(0,0,0,.75);align-items:center;justify-content:center;padding:20px">
+  <div style="max-width:420px;width:100%;max-height:88vh;overflow-y:auto;background:linear-gradient(160deg,#2a0512,#160409);border:1px solid rgba(255,255,255,.14);border-radius:18px;box-shadow:0 14px 44px rgba(0,0,0,.65);padding:22px">
+    <h3 style="margin:0 0 6px;font-size:20px">📜 Règles de la communauté</h3>
+    <p style="color:#ffb8cd;font-size:13px;margin-bottom:12px">SpeeDateLive est réservé aux adultes. En utilisant l'appli, tu acceptes ces règles.</p>
+    <div style="font-size:13.5px;line-height:1.5;color:#ffe6ee">
+      <p style="margin:8px 0">🔞 <b>Réservé aux 18 ans et plus.</b> Toute personne mineure sera bannie.</p>
+      <p style="margin:8px 0">🚫 <b>Interdit :</b> nudité, contenu sexuel explicite, harcèlement, propos haineux, violence, menaces, arnaques, ou tout contenu illégal.</p>
+      <p style="margin:8px 0">🤝 <b>Respect :</b> sois courtois(e). Pas d'insultes ni de comportement déplacé.</p>
+      <p style="margin:8px 0">🛡️ <b>Sécurité :</b> ne partage jamais d'informations personnelles sensibles (adresse, coordonnées bancaires…).</p>
+      <p style="margin:8px 0">🚩 <b>Signalement :</b> utilise le bouton « Signaler » 🚫 face à un comportement inapproprié. Un compte signalé par plusieurs personnes est <b>automatiquement suspendu</b>.</p>
+      <p style="margin:8px 0">⛔ <b>Blocage :</b> tu peux bloquer quelqu'un à tout moment — vous ne vous recroiserez plus.</p>
+    </div>
+    <button id="rulesClose" class="btn" style="margin-top:16px">J'ai compris 👍</button>
   </div>
 </div>
 
@@ -2275,6 +2296,9 @@ setInterval(refreshNotifs, 700);
         else if(m.type==="signal"){ await onSignal(m.data); }
         else if(m.type==="peer-left"){ info("La personne est partie. On te cherche quelqu'un d'autre…"); teardownPeer(); wsSend({type:"next"}); showSearching(); }
         else if(m.type==="recall-failed"){ if(typeof state!=="undefined"){ state.tokens=(state.tokens||0)+1; if(typeof updateTokens==="function") updateTokens(); } info("↩️ La personne n'est plus disponible — ton jeton t'a été remboursé."); }
+        else if(m.type==="banned"){ teardownPeer(); clearInterval(timerInt); try{ if(ws) ws.close(); }catch(_){}
+          document.getElementById("live").style.display="none"; document.getElementById("onboarding").style.display="block";
+          alert("⛔ Ton compte a été suspendu pour non-respect des règles de la communauté. Tu ne peux plus accéder au live."); }
       };
     });
   }
@@ -2499,9 +2523,11 @@ setInterval(refreshNotifs, 700);
     if(!p) return show("Choisis un pseudo.");
     if(!em.includes("@")) return show("Entre une adresse e-mail valide.");
     if(pw.length<6) return show("Ton mot de passe doit faire au moins 6 caractères.");
+    const ag=document.getElementById("acAgree");
+    if(!ag || !ag.checked) return show("Tu dois certifier avoir 18 ans ou plus et accepter les règles.");
     warn.style.display="none";
     const btn=document.getElementById("acCreate"), old=btn.textContent; btn.textContent="… création"; btn.disabled=true;
-    const r=await api("/api/signup","POST",{pseudo:p,email:em,password:pw});
+    const r=await api("/api/signup","POST",{pseudo:p,email:em,password:pw,agree18:true});
     btn.textContent=old; btn.disabled=false;
     if(!r.ok) return show(r.data.error||"Impossible de créer le compte.");
     setToken(r.data.token); applyUser(r.data.user); showApp(); reparseEmoji&&reparseEmoji();
@@ -2746,6 +2772,28 @@ setInterval(refreshNotifs, 700);
       setTimeout(loadWallet, 1800);
     }
   })();
+})();
+
+/* =================================================================
+   MODÉRATION (client) — règles, signalement réel, compte suspendu.
+   ================================================================= */
+(function(){
+  const api=window.sdlApi;
+  // Page Règles
+  const rm=document.getElementById("rulesModal");
+  const sr=document.getElementById("showRules"); if(sr) sr.onclick=(e)=>{ e.preventDefault(); if(rm) rm.style.display="flex"; };
+  const rc=document.getElementById("rulesClose"); if(rc) rc.onclick=()=>{ if(rm) rm.style.display="none"; };
+  // Signaler (réel) : motif → enregistrement serveur → blocage → suivant
+  const rb=document.getElementById("reportBtn");
+  if(rb) rb.onclick=()=>{
+    if(typeof partner==="undefined" || !partner || !partner.uid){ if(typeof nextPartner==="function") nextPartner(); return; }
+    const reason=prompt("Pourquoi signales-tu cette personne ?\n(comportement déplacé, nudité, harcèlement, arnaque…)","");
+    if(reason===null) return;   // annulé
+    if(api) api("/api/report","POST",{reportedId:partner.uid, reason:reason||""});
+    const li=document.getElementById("liveInfo"); if(li) li.textContent="🚫 Merci, la personne a été signalée et bloquée. On passe à la suivante…";
+    if(typeof window.sdlLoadBlocked==="function") setTimeout(window.sdlLoadBlocked, 300);
+    setTimeout(()=>{ if(typeof nextPartner==="function") nextPartner(); }, 1000);
+  };
 })();
 </script>
 </body>

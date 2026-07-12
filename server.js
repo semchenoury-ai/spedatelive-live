@@ -54,6 +54,19 @@ async function initDB() {
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS premium BOOLEAN DEFAULT false;`);
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS vip BOOLEAN DEFAULT false;`);
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS free_boost INT DEFAULT 0;`);
+  // Modération : consentement 18+ et suspension de compte
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS agree18 BOOLEAN DEFAULT false;`);
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS banned BOOLEAN DEFAULT false;`);
+  // Signalements
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS reports (
+      id SERIAL PRIMARY KEY,
+      reporter_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      reported_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      reason TEXT,
+      created_at TIMESTAMPTZ DEFAULT now(),
+      UNIQUE (reporter_id, reported_id)
+    );`);
   // Achats payés (idempotence : on ne crédite qu'une fois par session Stripe)
   await pool.query(`
     CREATE TABLE IF NOT EXISTS purchases (
@@ -141,10 +154,11 @@ async function handleAPI(req, res, url){
     if(!pseudo) return sendJSON(res,400,{error:"Choisis un pseudo."});
     if(!validEmail(email)) return sendJSON(res,400,{error:"Adresse e-mail invalide."});
     if(password.length<6) return sendJSON(res,400,{error:"Mot de passe : au moins 6 caractères."});
+    if(b.agree18!==true) return sendJSON(res,400,{error:"Tu dois certifier avoir 18 ans ou plus et accepter les règles."});
     try{
       const hash=await bcrypt.hash(password,10);
       const r=await pool.query(
-        "INSERT INTO users(pseudo,email,pass_hash) VALUES($1,$2,$3) RETURNING *",
+        "INSERT INTO users(pseudo,email,pass_hash,agree18) VALUES($1,$2,$3,true) RETURNING *",
         [pseudo,email,hash]);
       const u=r.rows[0];
       return sendJSON(res,200,{ token:makeToken(u), user:publicUser(u) });
@@ -163,6 +177,7 @@ async function handleAPI(req, res, url){
     if(!u) return sendJSON(res,401,{error:"E-mail ou mot de passe incorrect."});
     const ok=await bcrypt.compare(password, u.pass_hash);
     if(!ok) return sendJSON(res,401,{error:"E-mail ou mot de passe incorrect."});
+    if(u.banned) return sendJSON(res,403,{error:"Ce compte a été suspendu pour non-respect des règles."});
     return sendJSON(res,200,{ token:makeToken(u), user:publicUser(u) });
   }
 
@@ -284,6 +299,18 @@ async function handleAPI(req, res, url){
     const u=await userFromAuth(req); if(!u) return sendJSON(res,401,{error:"Non connecté."});
     const rows=await pool.query("SELECT us.id,us.pseudo,us.genre,us.origine,us.photo FROM blocks b JOIN users us ON us.id=b.blocked_id WHERE b.blocker_id=$1",[u.id]);
     return sendJSON(res,200,{ blocked:rows.rows });
+  }
+
+  // ---- Signalement (modération) : stocke + bloque + suspend automatiquement ----
+  if(url==="/api/report" && req.method==="POST"){
+    const u=await userFromAuth(req); if(!u) return sendJSON(res,401,{error:"Non connecté."});
+    const b=await readBody(req); const rid=parseInt(b.reportedId,10); const reason=(b.reason||"").slice(0,300);
+    if(!rid||rid===u.id) return sendJSON(res,400,{error:"Cible invalide."});
+    await pool.query("INSERT INTO reports(reporter_id,reported_id,reason) VALUES($1,$2,$3) ON CONFLICT (reporter_id,reported_id) DO UPDATE SET reason=EXCLUDED.reason, created_at=now()",[u.id,rid,reason]);
+    const c=await pool.query("SELECT count(*)::int AS n FROM reports WHERE reported_id=$1",[rid]);
+    if(c.rows[0].n>=3){ await pool.query("UPDATE users SET banned=true WHERE id=$1",[rid]); }
+    await pool.query("INSERT INTO blocks(blocker_id,blocked_id) VALUES($1,$2) ON CONFLICT DO NOTHING",[u.id,rid]);
+    return sendJSON(res,200,{ ok:true, suspended: c.rows[0].n>=3 });
   }
 
   // ---- Portefeuille (jetons/VIP/boost) : charger / sauvegarder ----
@@ -422,7 +449,7 @@ const clients = new Map();   // id -> user, pour retrouver la dernière personne
 wss.on("connection",(ws)=>{
   const user={ id:nextId++, ws, room:null, lastPeerId:null };
   clients.set(user.id, user);
-  ws.on("message",(raw)=>{
+  ws.on("message",async (raw)=>{
     let msg; try{ msg=JSON.parse(raw); }catch(e){ return; }
     if(msg.type==="join"){
       user.genre=msg.genre; user.pref=msg.pref;
@@ -434,6 +461,11 @@ wss.on("connection",(ws)=>{
       user.uid=msg.uid||null;            // relie la connexion live au compte
       user.blocked=Array.isArray(msg.blocked)?msg.blocked:[];   // uids bloqués
       user.pseudo=msg.pseudo||"";
+      // modération : un compte suspendu ne peut pas entrer dans le live
+      if(pool && user.uid){
+        try{ const r=await pool.query("SELECT banned FROM users WHERE id=$1",[user.uid]);
+          if(r.rows[0] && r.rows[0].banned){ send(user.ws,{type:"banned"}); return; } }catch(e){}
+      }
       requeue(user);
     }
     else if(msg.type==="boost"){ user.boost = !!msg.on; }  // active/désactive la priorité
