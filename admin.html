@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Tableau de bord — SpeeDateLive</title>
+<link rel="icon" href="/favicon.ico">
+<style>
+  :root{ --pink:#e75a86; --pink2:#ff8fae; --bg:#141018; --card:#211a26; --line:#3a2f42; --txt:#fff; --muted:#c9b8d0; }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body{ margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; background:var(--bg); color:var(--txt); min-height:100vh; }
+  .wrap{ max-width:820px; margin:0 auto; padding:24px 16px 60px; }
+  .logo{ display:flex; align-items:center; gap:12px; margin-bottom:24px; }
+  .logo img{ width:40px; height:40px; }
+  .logo h1{ font-size:22px; margin:0; background:linear-gradient(90deg,var(--pink2),var(--pink)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .card{ background:var(--card); border:1px solid var(--line); border-radius:16px; padding:20px; }
+  label{ display:block; font-size:13px; color:var(--muted); margin-bottom:6px; }
+  input{ width:100%; padding:14px; font-size:16px; border-radius:12px; border:1px solid var(--line); background:#191320; color:#fff; }
+  input:focus{ outline:none; border-color:var(--pink); }
+  button{ width:100%; margin-top:14px; padding:14px; font-size:16px; font-weight:700; border:none; border-radius:12px; cursor:pointer;
+    background:linear-gradient(90deg,var(--pink),var(--pink2)); color:#fff; }
+  button:active{ transform:scale(.99); }
+  .note{ color:#ff7a94; font-size:13px; margin-top:10px; min-height:18px; }
+  .banner{ background:#3a2a12; border:1px solid #7a5a1e; color:#ffd79a; font-size:13px; padding:10px 14px; border-radius:12px; margin-bottom:18px; }
+  .grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; }
+  .stat{ background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px; }
+  .stat .k{ font-size:13px; color:var(--muted); }
+  .stat .v{ font-size:26px; font-weight:800; margin-top:4px; }
+  .stat .s{ font-size:12px; color:var(--muted); margin-top:2px; }
+  h2{ font-size:15px; color:var(--muted); font-weight:600; margin:26px 0 10px; text-transform:uppercase; letter-spacing:.04em; }
+  table{ width:100%; border-collapse:collapse; }
+  th,td{ text-align:left; padding:10px 8px; border-bottom:1px solid var(--line); font-size:14px; }
+  th{ color:var(--muted); font-weight:600; }
+  td.r,th.r{ text-align:right; }
+  .refresh{ display:flex; justify-content:space-between; align-items:center; margin:22px 0 4px; }
+  .refresh button{ width:auto; margin:0; padding:8px 16px; font-size:13px; }
+  .hidden{ display:none; }
+  .muted{ color:var(--muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="logo">
+    <img src="/favicon-192.png" alt="">
+    <h1>Tableau de bord</h1>
+  </div>
+
+  <div id="loginCard" class="card">
+    <label for="pw">Mot de passe administrateur</label>
+    <input id="pw" type="password" placeholder="••••••••" autocomplete="current-password">
+    <button id="go">Se connecter</button>
+    <div id="note" class="note"></div>
+  </div>
+
+  <div id="dash" class="hidden">
+    <div id="testBanner" class="banner hidden">⚠️ Stripe est en <b>mode test</b> — les ventes affichées sont fictives. Elles deviendront réelles une fois ton compte Stripe activé.</div>
+
+    <div class="refresh">
+      <span class="muted" id="updated"></span>
+      <button id="reload">↻ Actualiser</button>
+    </div>
+
+    <h2>Inscrits</h2>
+    <div class="grid" id="usersGrid"></div>
+
+    <h2>Ventes</h2>
+    <div class="grid" id="salesGrid"></div>
+
+    <h2>Détail des ventes par produit</h2>
+    <div class="card" style="padding:6px 14px">
+      <table id="prodTable"><thead><tr><th>Produit</th><th class="r">Ventes</th><th class="r">Revenus</th></tr></thead><tbody></tbody></table>
+    </div>
+  </div>
+</div>
+
+<script>
+  var pw="";
+  var euro=function(c){ return (c/100).toLocaleString('fr-FR',{style:'currency',currency:'EUR'}); };
+  function statCard(k,v,s){ return '<div class="stat"><div class="k">'+k+'</div><div class="v">'+v+'</div>'+(s?'<div class="s">'+s+'</div>':'')+'</div>'; }
+
+  async function load(){
+    var note=document.getElementById('note');
+    note.textContent="";
+    try{
+      var r=await fetch('/api/admin/stats',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:pw})});
+      var d=await r.json();
+      if(!r.ok){ note.textContent=d.error||"Erreur."; return false; }
+
+      document.getElementById('loginCard').classList.add('hidden');
+      document.getElementById('dash').classList.remove('hidden');
+      document.getElementById('testBanner').classList.toggle('hidden', !d.testMode);
+
+      var u=d.users;
+      document.getElementById('usersGrid').innerHTML=
+        statCard('Comptes au total', u.total)+
+        statCard('Nouveaux aujourd’hui', u.today)+
+        statCard('Nouveaux (7 jours)', u.week)+
+        statCard('Via Google', u.google)+
+        statCard('Via e-mail', u.email)+
+        statCard('Membres VIP', u.vip)+
+        statCard('Ville débloquée', u.premium)+
+        statCard('Comptes bannis', u.banned);
+
+      var p=d.purchases;
+      document.getElementById('salesGrid').innerHTML=
+        statCard('Revenus totaux', euro(p.revenueCents))+
+        statCard('Achats au total', p.total)+
+        statCard('Achats (7 jours)', p.week)+
+        statCard('Achats aujourd’hui', p.today);
+
+      var tb=document.querySelector('#prodTable tbody');
+      tb.innerHTML = p.products.length ? p.products.map(function(x){
+        return '<tr><td>'+x.name+'</td><td class="r">'+x.count+'</td><td class="r">'+euro(x.revenueCents)+'</td></tr>';
+      }).join('') : '<tr><td colspan="3" class="muted" style="text-align:center;padding:18px">Aucune vente pour l’instant.</td></tr>';
+
+      document.getElementById('updated').textContent='Mis à jour à '+new Date().toLocaleTimeString('fr-FR');
+      return true;
+    }catch(e){ note.textContent="Impossible de contacter le serveur."; return false; }
+  }
+
+  document.getElementById('go').onclick=async function(){ pw=document.getElementById('pw').value; await load(); };
+  document.getElementById('pw').addEventListener('keydown',function(e){ if(e.key==='Enter') document.getElementById('go').click(); });
+  document.getElementById('reload').onclick=load;
+</script>
+</body>
+</html>

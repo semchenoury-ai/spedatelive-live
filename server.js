@@ -43,6 +43,9 @@ const PRODUCTS = {
   vip:      { name:"Pack VIP SpeeDateLive",  amount:799, vip:true, premium:true, tokens:20, boost:25 }
 };
 
+// --- Tableau de bord admin (protégé par mot de passe) ---
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "";
+
 // --- Base de données (Neon PostgreSQL) ---
 const hasDB = !!process.env.DATABASE_URL;
 const pool = hasDB ? new Pool({
@@ -465,6 +468,35 @@ async function handleAPI(req, res, url){
     }catch(e){ console.error("confirm:",e.message); return sendJSON(res,500,{error:"Erreur de confirmation."}); }
   }
 
+  // Statistiques admin (tableau de bord privé)
+  if(url==="/api/admin/stats" && req.method==="POST"){
+    const b=await readBody(req);
+    if(!ADMIN_PASSWORD) return sendJSON(res,503,{error:"Tableau de bord non configuré (ADMIN_PASSWORD manquant)."});
+    if((b.password||"")!==ADMIN_PASSWORD) return sendJSON(res,403,{error:"Mot de passe incorrect."});
+    try{
+      const u=await pool.query(`SELECT
+        COUNT(*)::int AS total,
+        COUNT(*) FILTER (WHERE created_at::date = now()::date)::int AS today,
+        COUNT(*) FILTER (WHERE created_at >= now()-interval '7 days')::int AS week,
+        COUNT(*) FILTER (WHERE google_id IS NOT NULL)::int AS google,
+        COUNT(*) FILTER (WHERE pass_hash IS NOT NULL)::int AS email,
+        COUNT(*) FILTER (WHERE vip)::int AS vip,
+        COUNT(*) FILTER (WHERE premium)::int AS premium,
+        COUNT(*) FILTER (WHERE banned)::int AS banned
+        FROM users`);
+      const pt=await pool.query(`SELECT COUNT(*)::int AS total,
+        COUNT(*) FILTER (WHERE created_at >= now()-interval '7 days')::int AS week,
+        COUNT(*) FILTER (WHERE created_at::date = now()::date)::int AS today
+        FROM purchases`);
+      const bp=await pool.query(`SELECT product, COUNT(*)::int AS n FROM purchases GROUP BY product`);
+      let revenue=0; const products=[];
+      for(const row of bp.rows){ const p=PRODUCTS[row.product]; const amt=p?p.amount:0; revenue+=amt*row.n; products.push({ name:p?p.name:row.product, count:row.n, revenueCents:amt*row.n }); }
+      products.sort((a,b)=>b.revenueCents-a.revenueCents);
+      const testMode = !process.env.STRIPE_SECRET_KEY || /sk_test/.test(process.env.STRIPE_SECRET_KEY||"");
+      return sendJSON(res,200,{ users:u.rows[0], purchases:{ total:pt.rows[0].total, week:pt.rows[0].week, today:pt.rows[0].today, revenueCents:revenue, products }, testMode });
+    }catch(e){ console.error("admin:",e.message); return sendJSON(res,500,{error:"Erreur serveur."}); }
+  }
+
   return sendJSON(res,404,{error:"Route inconnue."});
 }
 
@@ -475,6 +507,7 @@ const server = http.createServer(async (req, res) => {
   if(url.startsWith("/api/")){ try{ return await handleAPI(req,res,url); }catch(e){ console.error(e); return sendJSON(res,500,{error:"Erreur serveur."}); } }
 
   if (url === "/") url = "/index.html";
+  if (url === "/admin") url = "/admin.html";
   const file = path.join(PUB, path.normalize(url).replace(/^(\.\.[/\\])+/, ""));
   fs.readFile(file, (err, data) => {
     if (err) { res.writeHead(404); res.end("Not found"); return; }
