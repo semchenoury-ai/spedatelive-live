@@ -497,6 +497,25 @@ async function handleAPI(req, res, url){
     }catch(e){ console.error("admin:",e.message); return sendJSON(res,500,{error:"Erreur serveur."}); }
   }
 
+  // Liste détaillée des comptes (admin)
+  if(url==="/api/admin/users" && req.method==="POST"){
+    const b=await readBody(req);
+    if(!ADMIN_PASSWORD) return sendJSON(res,503,{error:"Tableau de bord non configuré."});
+    if((b.password||"")!==ADMIN_PASSWORD) return sendJSON(res,403,{error:"Mot de passe incorrect."});
+    try{
+      const onlyBanned = b.filter==="banned";
+      const r=await pool.query(`
+        SELECT u.id, u.pseudo, u.email, u.created_at, u.banned, u.vip, u.premium,
+               (u.google_id IS NOT NULL) AS google,
+               (SELECT COUNT(*)::int FROM purchases p WHERE p.user_id=u.id) AS purchases,
+               (SELECT COUNT(*)::int FROM reports rp WHERE rp.reported_id=u.id) AS reports
+        FROM users u
+        ${onlyBanned ? "WHERE u.banned" : ""}
+        ORDER BY u.created_at DESC LIMIT 200`);
+      return sendJSON(res,200,{ users:r.rows });
+    }catch(e){ console.error("admin/users:",e.message); return sendJSON(res,500,{error:"Erreur serveur."}); }
+  }
+
   return sendJSON(res,404,{error:"Route inconnue."});
 }
 

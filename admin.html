@@ -37,6 +37,11 @@
   .refresh button{ width:auto; margin:0; padding:8px 16px; font-size:13px; }
   .hidden{ display:none; }
   .muted{ color:var(--muted); }
+  .filt{ width:auto; margin:0; padding:7px 14px; font-size:13px; font-weight:600; background:transparent; border:1px solid var(--line); color:var(--muted); }
+  .filt.on{ background:var(--pink); border-color:var(--pink); color:#fff; }
+  .badge{ display:inline-block; padding:2px 9px; border-radius:20px; font-size:12px; font-weight:600; }
+  .b-ok{ background:#183a2a; color:#7ee2af; } .b-ban{ background:#3d1620; color:#ff8ea3; }
+  .b-vip{ background:#3a2a12; color:#ffcf8a; } .b-prem{ background:#1c2b45; color:#9ec2ff; }
 </style>
 </head>
 <body>
@@ -70,6 +75,20 @@
     <h2>Détail des ventes par produit</h2>
     <div class="card" style="padding:6px 14px">
       <table id="prodTable"><thead><tr><th>Produit</th><th class="r">Ventes</th><th class="r">Revenus</th></tr></thead><tbody></tbody></table>
+    </div>
+
+    <div class="refresh">
+      <h2 style="margin:26px 0 0">Comptes</h2>
+      <div style="display:flex;gap:8px">
+        <button id="fAll" class="filt on">Tous</button>
+        <button id="fBan" class="filt">Bannis</button>
+      </div>
+    </div>
+    <div class="card" style="padding:6px 14px;overflow-x:auto">
+      <table id="userTable">
+        <thead><tr><th>Pseudo</th><th>E-mail</th><th>Inscrit le</th><th>Via</th><th>Statut</th></tr></thead>
+        <tbody></tbody>
+      </table>
     </div>
   </div>
 </div>
@@ -119,9 +138,35 @@
     }catch(e){ note.textContent="Impossible de contacter le serveur."; return false; }
   }
 
-  document.getElementById('go').onclick=async function(){ pw=document.getElementById('pw').value; await load(); };
+  var userFilter="all";
+  function fmtDate(s){ var d=new Date(s); return d.toLocaleDateString('fr-FR')+' '+d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}); }
+  async function loadUsers(){
+    try{
+      var r=await fetch('/api/admin/users',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:pw,filter:userFilter})});
+      var d=await r.json(); if(!r.ok) return;
+      var tb=document.querySelector('#userTable tbody');
+      tb.innerHTML = d.users.length ? d.users.map(function(u){
+        var st = u.banned ? '<span class="badge b-ban">Banni</span>'
+               : u.vip ? '<span class="badge b-vip">VIP</span>'
+               : u.premium ? '<span class="badge b-prem">Ville</span>'
+               : '<span class="badge b-ok">Actif</span>';
+        var rep = u.reports>0 ? ' <span class="muted" style="font-size:12px">('+u.reports+' signal.)</span>' : '';
+        return '<tr><td>'+(u.pseudo||'—')+'</td><td class="muted">'+u.email+'</td><td class="muted">'+fmtDate(u.created_at)+'</td><td>'+(u.google?'Google':'E-mail')+'</td><td>'+st+rep+'</td></tr>';
+      }).join('') : '<tr><td colspan="5" class="muted" style="text-align:center;padding:18px">Aucun compte'+(userFilter==='banned'?' banni':'')+'.</td></tr>';
+    }catch(e){}
+  }
+  function setFilter(f){
+    userFilter=f;
+    document.getElementById('fAll').classList.toggle('on', f==='all');
+    document.getElementById('fBan').classList.toggle('on', f==='banned');
+    loadUsers();
+  }
+
+  document.getElementById('go').onclick=async function(){ pw=document.getElementById('pw').value; var ok=await load(); if(ok) loadUsers(); };
   document.getElementById('pw').addEventListener('keydown',function(e){ if(e.key==='Enter') document.getElementById('go').click(); });
-  document.getElementById('reload').onclick=load;
+  document.getElementById('reload').onclick=function(){ load(); loadUsers(); };
+  document.getElementById('fAll').onclick=function(){ setFilter('all'); };
+  document.getElementById('fBan').onclick=function(){ setFilter('banned'); };
 </script>
 </body>
 </html>
