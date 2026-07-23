@@ -1270,7 +1270,7 @@ const REPONSES = ["Haha j'adore 😄","Trop cool !","Tu me plais bien tu sais �
   "T'es mon coup de cœur 🥰","Dis m'en plus sur toi","J'aime beaucoup ta vibe ❤️","Toi aussi tu es adorable"];
 
 /* ---------- État ---------- */
-const state = {genre:null, pref:null, ageMine:null, hairMine:null, hairPref:null, agePref:null, origine:"fr", cible:"fr", villeMienne:null, villeCible:null, premium:false, tokens:3, msgUnlimited:false, freeBoost:0};
+const state = {genre:null, pref:null, ageMine:null, hairMine:null, hairPref:null, agePref:null, origine:"fr", cible:"all", villeMienne:null, villeCible:null, premium:false, tokens:3, msgUnlimited:false, freeBoost:0};
 let stream=null, timerInt=null, partner=null, iLiked=false;
 
 /* ---------- Coeurs animés ---------- */
@@ -1281,29 +1281,29 @@ for(let i=0;i<18;i++){const s=document.createElement("span");s.textContent="❤"
 
 /* ---------- Remplir les selects ---------- */
 const selO=document.getElementById("paysOrigine"), selC=document.getElementById("paysCible");
-PAYS.forEach(([k,v])=>{if(k!=="all")selO.appendChild(new Option(v,k));selC.appendChild(new Option(v,k));});
 const selVilleMienne=document.getElementById("villeMienne"),
       selVilleCible=document.getElementById("villeCible"),
       autoNote=document.getElementById("autoNote");
+// Pays triés par ordre alphabétique (sans « Peu importe »)
+const nomPays=v=>v.split(" ").slice(1).join(" ");
+const PAYS_TRI=PAYS.filter(([k])=>k!=="all").slice().sort((a,b)=>nomPays(a[1]).localeCompare(nomPays(b[1]),"fr"));
+// « Je viens de » : la liste des pays A→Z
+PAYS_TRI.forEach(([k,v])=>selO.appendChild(new Option(v,k)));
+// « De quel pays » : « Tout le monde » en haut, puis les pays A→Z
+selC.appendChild(new Option("🌍 Tout le monde","all"));
+PAYS_TRI.forEach(([k,v])=>selC.appendChild(new Option(v,k)));
 
-// pays d'origine → pré-remplit automatiquement le pays cible
-selO.value="fr"; selC.value="fr";
-function syncAuto(){
-  autoNote.textContent=`(auto : ${PAYS.find(p=>p[0]===state.origine)[1]})`;
-}
-syncAuto();
-selO.onchange=e=>{
-  state.origine=e.target.value;
-  selC.value=state.origine;      // ça met automatiquement le même pays
-  state.cible=state.origine;
-  syncAuto();
-  fillMyCity(); fillTargetCity();
-};
-selC.onchange=e=>{ state.cible=e.target.value; autoNote.textContent="(modifié manuellement)"; fillMyCity(); fillTargetCity(); };
+// Par défaut : je viens de France, et je rencontre tout le monde
+selO.value="fr"; selC.value="all";
+state.origine="fr"; state.cible="all";
+if(autoNote) autoNote.textContent="";
 
-// GRATUIT : ta propre ville (tout le monde en met une)
+selO.onchange=e=>{ state.origine=e.target.value; fillMyCity(); };
+selC.onchange=e=>{ state.cible=e.target.value; fillTargetCity(); };
+
+// GRATUIT : ta propre ville (dépend de « Je viens de »)
 function fillMyCity(){
-  const vs = VILLES[state.cible]||[];
+  const vs = VILLES[state.origine]||[];
   selVilleMienne.innerHTML="";
   vs.forEach(v=>selVilleMienne.appendChild(new Option("📍 "+v,v)));
   state.villeMienne = vs[0]||null;
@@ -2252,7 +2252,7 @@ function saveState(){
 function loadState(){
   let d; try{ d=JSON.parse(localStorage.getItem("sdl_state")||"null"); }catch(e){}
   if(!d || !localStorage.getItem("sdl_user")) return;
-  Object.assign(state,{ageMine:d.ageMine,genre:d.genre,pref:d.pref,hairMine:d.hairMine,hairPref:d.hairPref,agePref:d.agePref,origine:d.origine||"fr",cible:d.cible||"fr",villeMienne:d.villeMienne,villeCible:d.villeCible,premium:!!d.premium,tokens:(d.tokens==null?3:d.tokens),msgUnlimited:!!d.msgUnlimited,freeBoost:d.freeBoost||0});
+  Object.assign(state,{ageMine:d.ageMine,genre:d.genre,pref:d.pref,hairMine:d.hairMine,hairPref:d.hairPref,agePref:d.agePref,origine:d.origine||"fr",cible:d.cible||"all",villeMienne:d.villeMienne,villeCible:d.villeCible,premium:!!d.premium,tokens:(d.tokens==null?3:d.tokens),msgUnlimited:!!d.msgUnlimited,freeBoost:d.freeBoost||0});
   state.blocked=d.blocked||[];
   matches=d.matches||[]; missed=d.missed||[]; threads=d.threads||[];
   updateTokens(); updateContactsCount(); updateInboxCount(); updateBlockedCount();
