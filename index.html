@@ -228,6 +228,9 @@
   .opt.sel{border-color:var(--rose);background:rgba(255,77,121,.22);
     box-shadow:0 0 14px rgba(255,77,121,.35)}
   .opt .emo{font-size:20px;display:block;margin-bottom:2px}
+  label.q.q-hero{font-size:16.5px;font-weight:700;margin-top:15px}
+  .opts-hero .opt{padding:9px 6px;font-size:14.5px}
+  .opts-hero .opt .emo{font-size:23px}
   select,input.field{width:100%;padding:10px;border-radius:11px;font-size:14px;border:none;
     background:rgba(255,255,255,.12);color:#fff;outline:none}
   select option{color:#111}
@@ -733,8 +736,8 @@
 
   <!-- ONBOARDING -->
   <div id="onboarding" class="card" style="display:none">
-    <label class="q">Je suis…</label>
-    <div class="opts" id="genre">
+    <label class="q q-hero">Je suis…</label>
+    <div class="opts opts-hero" id="genre">
       <div class="opt" data-v="homme"><span class="emo">👨</span>Un homme</div>
       <div class="opt" data-v="femme"><span class="emo">👩</span>Une femme</div>
     </div>
@@ -744,19 +747,8 @@
     <div id="ageWarn" style="display:none;color:#ff7a94;font-size:12px;margin-top:4px">Tu dois avoir au moins 18 ans.</div>
     <div style="color:#ff7a94;font-size:11.5px;margin-top:4px">🔒 Ton âge est enregistré avec ton compte. Pour le modifier plus tard, va dans <b>Mon profil → Réglages</b>.</div>
 
-    <label class="q">Mes cheveux <span class="opt-note">(gratuit)</span></label>
-    <div class="opts" id="hair">
-      <div class="opt" data-v="blond"><span class="emo">🟡</span>Blond</div>
-      <div class="opt" data-v="roux"><span class="emo">🟠</span>Roux</div>
-      <div class="opt" data-v="chatain"><span class="emo">🟤</span>Châtain</div>
-      <div class="opt" data-v="blanc"><span class="emo">⚪</span>Blanc</div>
-    </div>
-
-    <label class="q">Je viens de…</label>
-    <select id="paysOrigine"></select>
-
-    <label class="q">Je veux rencontrer…</label>
-    <div class="opts" id="pref">
+    <label class="q q-hero">Je veux rencontrer…</label>
+    <div class="opts opts-hero" id="pref">
       <div class="opt" data-v="femme"><span class="emo">👩</span>Des femmes</div>
       <div class="opt" data-v="homme"><span class="emo">👨</span>Des hommes</div>
       <div class="opt" data-v="tous"><span class="emo">💞</span>Tout le monde</div>
@@ -778,12 +770,23 @@
       <div class="opt" data-v="30+"><span class="emo">🌹</span>30 ans et +</div>
     </div>
 
-    <label class="q">De quel pays ? <span id="autoNote" class="auto-note"></span></label>
-    <select id="paysCible"></select>
+    <label class="q">Je viens de…</label>
+    <select id="paysOrigine"></select>
 
     <!-- GRATUIT pour tout le monde : ta propre ville -->
     <label class="q">📍 Ma ville <span class="opt-note">(gratuit)</span></label>
     <select id="villeMienne"></select>
+
+    <label class="q">Mes cheveux <span class="opt-note">(gratuit)</span></label>
+    <div class="opts" id="hair">
+      <div class="opt" data-v="blond"><span class="emo">🟡</span>Blond</div>
+      <div class="opt" data-v="roux"><span class="emo">🟠</span>Roux</div>
+      <div class="opt" data-v="chatain"><span class="emo">🟤</span>Châtain</div>
+      <div class="opt" data-v="blanc"><span class="emo">⚪</span>Blanc</div>
+    </div>
+
+    <label class="q">De quel pays ? <span id="autoNote" class="auto-note"></span></label>
+    <select id="paysCible"></select>
 
     <!-- VIP à débloquer : choisir qui rencontrer (cheveux + âge) -->
     <div id="vipLockZone">
