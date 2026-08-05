@@ -308,6 +308,8 @@
   .cbtn{width:66px;height:66px;border-radius:50%;border:none;cursor:pointer;font-size:26px;
     display:flex;align-items:center;justify-content:center;transition:.2s;color:#fff}
   .cbtn:hover{transform:scale(1.1)}
+  .cbtn svg{width:30px;height:30px;fill:currentColor;pointer-events:none;display:block}
+  .cbtn.like svg{width:33px;height:33px}
   .next{background:rgba(255,255,255,.14)}
   .like{background:linear-gradient(135deg,var(--rouge),var(--rose));
     box-shadow:0 8px 24px rgba(230,0,67,.5);width:78px;height:78px;font-size:32px}
@@ -600,6 +602,8 @@
     .mini-buy{padding:5px 11px;font-size:11.5px}
     .cbtn{width:50px;height:50px;font-size:20px}
     .cbtn.like{width:58px;height:58px;font-size:25px}
+    .cbtn svg{width:24px;height:24px}
+    .cbtn.like svg{width:27px;height:27px}
     .clabel{font-size:9.5px;max-width:52px}
     /* Bannières d'achat adaptées au téléphone */
     .paywall-card{padding:18px 16px;max-width:340px}
@@ -974,12 +978,12 @@
       </div>
 
       <div class="controls">
-        <div class="ctrl"><button class="cbtn next" id="backBtn" title="Revenir">↩️</button><span class="clabel">Revenir</span></div>
-        <div class="ctrl"><button class="cbtn next" id="nextBtn" title="Passer">⏭️</button><span class="clabel">Passer</span></div>
-        <div class="ctrl"><button class="cbtn like" id="likeBtn" title="Coup de cœur">❤️</button><span class="clabel">Coup de cœur</span></div>
-        <div class="ctrl"><button class="cbtn next" id="muteBtn" title="Micro">🎤</button><span class="clabel">Micro</span></div>
-        <div class="ctrl"><button class="cbtn flower" id="flowerBtn" title="Fleur">🌹</button><span class="clabel">Fleur</span></div>
-        <div class="ctrl"><button class="cbtn next" id="reportBtn" title="Signaler">🚫</button><span class="clabel">Signaler</span></div>
+        <div class="ctrl"><button class="cbtn next" id="backBtn" title="Revenir"><svg viewBox="0 0 24 24"><path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62A7.97 7.97 0 0 1 12.5 11c2.98 0 5.5 1.94 6.4 4.62l2.37-.78A9 9 0 0 0 12.5 8z"/></svg></button><span class="clabel">Revenir</span></div>
+        <div class="ctrl"><button class="cbtn next" id="nextBtn" title="Passer"><svg viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg></button><span class="clabel">Passer</span></div>
+        <div class="ctrl"><button class="cbtn like" id="likeBtn" title="Coup de cœur"><svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3A5.5 5.5 0 0 1 12 5.09 5.5 5.5 0 0 1 16.5 3 5.5 5.5 0 0 1 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg></button><span class="clabel">Coup de cœur</span></div>
+        <div class="ctrl"><button class="cbtn next" id="muteBtn" title="Micro"><svg viewBox="0 0 24 24"><path d="M12 15a4 4 0 0 0 4-4V6a4 4 0 0 0-8 0v5a4 4 0 0 0 4 4zm6-4a6 6 0 0 1-5 5.91V20h-2v-3.09A6 6 0 0 1 6 11h2a4 4 0 0 0 8 0h2z"/></svg></button><span class="clabel">Micro</span></div>
+        <div class="ctrl"><button class="cbtn flower" id="flowerBtn" title="Fleur"><svg viewBox="0 0 24 24"><path d="M12 22c4.97 0 9-1.79 9-4 0-1.2-1.2-2.27-3.1-3 .06-.32.1-.66.1-1 0-2.76-2.69-5-6-5s-6 2.24-6 5c0 .34.04.68.1 1C4.2 15.73 3 16.8 3 18c0 2.21 4.03 4 9 4zm0-13a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/></svg></button><span class="clabel">Fleur</span></div>
+        <div class="ctrl"><button class="cbtn next" id="reportBtn" title="Signaler"><svg viewBox="0 0 24 24"><path d="M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6z"/></svg></button><span class="clabel">Signaler</span></div>
       </div>
 
       <!-- Choix de la fleur -->
@@ -2067,11 +2071,13 @@ document.getElementById("nextBtn").onclick=()=>{
 document.getElementById("reportBtn").onclick=()=>{document.getElementById("liveInfo").textContent="🚫 Personne signalée. On passe à la personne suivante…";setTimeout(nextPartner,900);};
 // Micro : se mettre en muet
 let micMuted=false;
+const MIC_ON_SVG='<svg viewBox="0 0 24 24"><path d="M12 15a4 4 0 0 0 4-4V6a4 4 0 0 0-8 0v5a4 4 0 0 0 4 4zm6-4a6 6 0 0 1-5 5.91V20h-2v-3.09A6 6 0 0 1 6 11h2a4 4 0 0 0 8 0h2z"/></svg>';
+const MIC_OFF_SVG='<svg viewBox="0 0 24 24"><path d="M16 11V6a4 4 0 0 0-7.72-1.5L16 12.2V11zm2 0a6 6 0 0 1-.9 3.16l1.46 1.46A8 8 0 0 0 20 11h-2zM3.29 3.29 2 4.59l6 6V11a4 4 0 0 0 4 4c.2 0 .39-.02.58-.05l1.62 1.62A6 6 0 0 1 6 11H4a8 8 0 0 0 7 7.94V22h2v-3.06a7.9 7.9 0 0 0 2.02-.55l3.39 3.39 1.3-1.3L3.29 3.29z"/></svg>';
 document.getElementById("muteBtn").onclick=()=>{
   micMuted=!micMuted;
   if(stream) stream.getAudioTracks().forEach(t=>t.enabled=!micMuted);
   const b=document.getElementById("muteBtn");
-  b.textContent=micMuted?"🔇":"🎤";
+  b.innerHTML=micMuted?MIC_OFF_SVG:MIC_ON_SVG;
   b.classList.toggle("muted",micMuted);
   document.querySelector("#muteBtn").parentElement.querySelector(".clabel").textContent=micMuted?"Muet":"Micro";
   document.getElementById("liveInfo").textContent=micMuted?"🔇 Ton micro est coupé":"🎤 Ton micro est activé";
@@ -2266,18 +2272,27 @@ loadState();
 setInterval(saveState, 2500);   // sauvegarde automatique
 
 // Flèches pour ranger les onglets réunis (téléphone)
+var _inviteL=true, _inviteR=true;
 (function(){
   var cl=document.getElementById("collapseLeft"), cr=document.getElementById("collapseRight");
   if(cl) cl.onclick=function(){
+    _inviteL=false;
     var h=document.body.classList.toggle("hide-left-badges");
     cl.querySelector(".arw").textContent=h?"›":"‹";
     refreshNotifs();
   };
   if(cr) cr.onclick=function(){
+    _inviteR=false;
     var h=document.body.classList.toggle("hide-right-badges");
     cr.querySelector(".arw").textContent=h?"‹":"›";
     refreshNotifs();
   };
+  // Sur téléphone : au démarrage, on range les badges des deux côtés et une pastille invite à ouvrir
+  if(window.matchMedia && window.matchMedia("(max-width:600px)").matches){
+    document.body.classList.add("hide-left-badges","hide-right-badges");
+    if(cl) cl.querySelector(".arw").textContent="›";
+    if(cr) cr.querySelector(".arw").textContent="‹";
+  }
 })();
 
 // ===== Notifications (pastilles rouges) sur flèches + badges =====
@@ -2299,8 +2314,8 @@ function refreshNotifs(){
   const colL = document.body.classList.contains("hide-left-badges");
   const colR = document.body.classList.contains("hide-right-badges");
   // Flèches (quand le groupe est replié) : la flèche porte la notif du groupe
-  setDot("leftNotif", unread>0 && colL, unread>9?"9+":unread);
-  setDot("rightNotif", (( lowTok&&!_tokAck )||( gift&&!_giftAck )) && colR, (gift&&!lowTok)?"🎁":"!");
+  setDot("leftNotif", ((unread>0)||_inviteL) && colL, unread>9?"9+":(unread>0?unread:""));
+  setDot("rightNotif", (( lowTok&&!_tokAck )||( gift&&!_giftAck )||_inviteR) && colR, (gift&&!lowTok)?"🎁":((lowTok&&!_tokAck)?"!":""));
   // Badges spécifiques (quand le groupe est déplié) : chacun sa notif
   setDot("tokenDot", lowTok && !_tokAck && !colR, "!");
   setDot("boostDot", gift && !_giftAck && !colR, "🎁");
