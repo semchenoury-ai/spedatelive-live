@@ -2315,8 +2315,8 @@ function refreshNotifs(){
   const colL = document.body.classList.contains("hide-left-badges");
   const colR = document.body.classList.contains("hide-right-badges");
   // Flèches (quand le groupe est replié) : la flèche porte la notif du groupe
-  setDot("leftNotif", ((unread>0)||_inviteL) && colL, unread>9?"9+":(unread>0?unread:""));
-  setDot("rightNotif", (( lowTok&&!_tokAck )||( gift&&!_giftAck )||_inviteR) && colR, (gift&&!lowTok)?"🎁":((lowTok&&!_tokAck)?"!":""));
+  setDot("leftNotif", ((unread>0)||_inviteL) && colL, unread>9?"9+":(unread>0?unread:"!"));
+  setDot("rightNotif", (( lowTok&&!_tokAck )||( gift&&!_giftAck )||_inviteR) && colR, (gift&&!lowTok)?"🎁":"!");
   // Badges spécifiques (quand le groupe est déplié) : chacun sa notif
   setDot("tokenDot", lowTok && !_tokAck && !colR, "!");
   setDot("boostDot", gift && !_giftAck && !colR, "🎁");
