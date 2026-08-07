@@ -445,6 +445,31 @@
   .paid-hint{font-size:12px;color:#c99;margin-top:8px;text-align:center}
   .paid-line.vip{background:rgba(255,210,143,.12);border-radius:12px;padding:12px;border-top:none;margin-top:6px}
   .paid-line.vip b{color:var(--or)}
+
+  /* Cadeau « 3 jetons offerts » bien mis en avant */
+  .gift-hero{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:3px 8px;
+    background:linear-gradient(135deg,rgba(125,255,155,.20),rgba(125,255,155,.07));
+    border:1px solid rgba(125,255,155,.5);border-radius:13px;padding:9px 13px;margin:0 0 14px;
+    text-align:center;font-size:13.5px;color:#daffe6;box-shadow:0 4px 14px rgba(125,255,155,.12)}
+  .gift-hero b{color:#a6ffbe;font-size:15px}
+  .gift-hero .gift-note{width:100%;font-size:11px;color:#9fd8ad}
+
+  /* Onglet dépliable des options payantes (triangle à droite) */
+  .paid-toggle{display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%;
+    background:rgba(255,210,143,.09);border:1px solid rgba(255,210,143,.45);border-radius:13px;
+    padding:10px 14px;margin:8px 0 9px;cursor:pointer;color:var(--or);font-weight:800;font-size:13.5px;
+    text-align:left;transition:.15s}
+  .paid-toggle:hover{background:rgba(255,210,143,.17)}
+  .paid-toggle .pt-sub{color:#c9a97a;font-weight:600;font-size:11.5px}
+  .paid-toggle .tri{flex:none;width:26px;height:26px;border-radius:50%;background:rgba(255,210,143,.18);
+    display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--or);
+    transition:transform .2s ease;animation:triBob 1.3s ease-in-out infinite}
+  @keyframes triBob{0%,100%{transform:translateY(0)}50%{transform:translateY(3px)}}
+  .paid-toggle:hover .tri{background:rgba(255,210,143,.3)}
+  .paid-toggle.open{margin-bottom:6px}
+  .paid-toggle.open .tri{transform:rotate(180deg);animation:none}
+  @media (prefers-reduced-motion:reduce){.paid-toggle .tri{animation:none}}
+  #paidBox{margin-top:0}
   .pack-upsell{margin-top:14px;background:rgba(255,210,143,.14);border:1px solid rgba(255,210,143,.5);
     border-radius:14px;padding:11px;font-size:13.5px;color:#ffe6c2;cursor:pointer;transition:.15s}
   .pack-upsell:hover{background:rgba(255,210,143,.24)}
@@ -556,6 +581,12 @@
     .paid-title{font-size:12.5px;margin-bottom:5px}
     .paid-line{font-size:11px;padding:6px 0}
     .paid-hint{font-size:10px}
+    .gift-hero{font-size:12px;padding:7px 10px;margin:0 0 9px}
+    .gift-hero b{font-size:13px}
+    .gift-hero .gift-note{font-size:10px}
+    .paid-toggle{font-size:12px;padding:8px 11px;margin:6px 0 8px}
+    .paid-toggle .pt-sub{font-size:10px}
+    .paid-toggle .tri{width:24px;height:24px;font-size:13px}
     #introBtn{padding:13px;font-size:16px;margin-top:14px}
 
     /* Sur téléphone : badges tout petits, texte minuscule, collés aux bords */
@@ -712,20 +743,22 @@
   <div id="intro" class="card" style="display:none">
     <h1 class="intro-title">Comment ça marche&nbsp;?</h1>
     <p class="intro-sub">Le principe : des rencontres en live, à la recherche de l'amour ❤️</p>
+
     <div class="steps">
       <div class="step"><span class="n">1</span><span class="t"><b>Live vidéo</b> avec une personne, <b>90 s</b> pour discuter (chat + voix).</span></div>
       <div class="step"><span class="n">2</span><span class="t"><b>⏭️ Passer</b> si ça n'accroche pas.</span></div>
       <div class="step"><span class="n">3</span><span class="t"><b>❤️ Coup de cœur</b> → le temps remonte. Réciproque = <b>match 💖</b></span></div>
       <div class="step"><span class="n">4</span><span class="t">Après un match, si vous êtes d'accord : <b>+3 min</b> ensemble.</span></div>
       <div class="step"><span class="n">5</span><span class="t">Tu choisis le <b>genre</b> et le <b>pays</b> des gens à croiser — les rencontres restent <b>au hasard</b>.</span></div>
-      <div class="step"><span class="n">6</span><span class="t"><b>🎟️ Jetons</b> : tu as passé quelqu'un et tu changes d'avis ? Reviens sur cette personne. Tu peux aussi offrir des fleurs (elles font gagner du temps, selon la fleur).</span></div>
-      <div class="step"><span class="n">7</span><span class="t"><b>🚀 Boost</b> : tu passes <b>avant tout le monde</b> → beaucoup plus de rencontres, plus vite.</span></div>
-      <div class="step"><span class="n">8</span><span class="t"><b>👑 VIP</b> : choisis les cheveux et l'âge à rencontrer, débloque ta ville, un Boost rechargé tout seul tous les 2 jours et les messages illimités.</span></div>
     </div>
 
-    <div class="paid-box">
-      <div class="paid-title">💳 Les options payantes</div>
-      <div style="background:rgba(125,255,155,.12);border:1px solid rgba(125,255,155,.4);border-radius:12px;padding:9px 11px;margin-bottom:9px;font-size:12.5px;color:#c9ffd6">🎁 <b>3 jetons offerts</b> pour bien démarrer !</div>
+    <!-- Options payantes repliées derrière un onglet (triangle) -->
+    <button class="paid-toggle" id="paidToggle" aria-expanded="false">
+      <span>💳 Options payantes <span class="pt-sub">— tout est optionnel</span></span>
+      <span class="tri" aria-hidden="true">⌄</span>
+    </button>
+    <div class="gift-hero">🎁 <b>3 jetons offerts</b> pour bien démarrer&nbsp;! <span class="gift-note">(gratuit)</span></div>
+    <div class="paid-box" id="paidBox" style="display:none">
       <button class="paid-line" id="pl-ville"><span>📍 <b>Ma Ville</b> — croise uniquement la ville de ton choix (et vois leur ville).</span><span class="chev">›</span></button>
       <button class="paid-line" id="pl-tokens"><span>🎟️ <b>Jetons</b> — tu as passé quelqu'un et tu changes d'avis ? Reviens sur cette personne. Sert aussi à offrir des fleurs (elles font gagner du temps, selon la fleur).</span><span class="chev">›</span></button>
       <button class="paid-line" id="pl-flowers"><span>🌹 <b>Fleurs</b> — offre une fleur en live (elle te fait gagner du temps, plus ou moins selon la fleur).</span><span class="chev">›</span></button>
@@ -1461,6 +1494,17 @@ document.getElementById("threadBlock").onclick=()=>{
   showInbox();
   const info=document.getElementById("liveInfo"); if(info) info.textContent=`🚫 ${nom} a été bloqué(e).`;
 };
+// Onglet « Options payantes » : replié par défaut, on déplie/replie au tap sur le triangle
+(function(){
+  var t=document.getElementById("paidToggle"), box=document.getElementById("paidBox");
+  if(t&&box){ t.onclick=function(){
+    var open=(box.style.display==="none"||box.style.display==="");
+    box.style.display=open?"block":"none";
+    t.classList.toggle("open",open);
+    t.setAttribute("aria-expanded",open?"true":"false");
+  }; }
+})();
+
 // Options payantes du mode d'emploi : on clique → le prix s'affiche dans la fenêtre de paiement
 document.getElementById("pl-ville").onclick=()=>{document.getElementById("paywall").style.display="flex";};
 document.getElementById("pl-tokens").onclick=()=>{document.getElementById("tokenPaywall").style.display="flex";};
